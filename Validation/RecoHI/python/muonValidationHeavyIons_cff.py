@@ -91,5 +91,5 @@ hiRecoMuonPrevalidation = cms.Sequence(
   * hiMuonAssociation_seq
 )
 
-# HI muon validation sequence
+# HI muon validation sequence 
 hiRecoMuonValidation = cms.Sequence( hiMuonValidation_seq )    
