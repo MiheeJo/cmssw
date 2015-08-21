@@ -7,12 +7,12 @@ import PhysicsTools.RecoAlgos.recoTrackSelector_cfi
 cutsRecoTrkMuons = PhysicsTools.RecoAlgos.recoTrackSelector_cfi.recoTrackSelector.clone()
 cutsRecoTrkMuons.src = "hiGeneralTracks"
 cutsRecoTrkMuons.quality = []
-cutsRecoTrkMuons.ptMin = 2.0
+cutsRecoTrkMuons.ptMin = 0.0
 
 # pt-selection of tracking particles
 import PhysicsTools.RecoAlgos.trackingParticleSelector_cfi
 cutsTpMuons = PhysicsTools.RecoAlgos.trackingParticleSelector_cfi.trackingParticleSelector.clone()
-cutsTpMuons.ptMin = 2.0
+cutsTpMuons.ptMin = 0.0
 
 #----------------------------------------
 
@@ -68,11 +68,11 @@ staMuonTrackVMuonAssoc.label_tp_fake  = 'cutsTpMuons'
 staUpdMuonTrackVMuonAssoc.label_tp_effic  = 'cutsTpMuons'
 staUpdMuonTrackVMuonAssoc.label_tp_fake  = 'cutsTpMuons'
 
-#change pt max of track validator
-trkMuonTrackVTrackAssoc.maxpT = cms.double(200)
-glbMuonTrackVMuonAssoc.maxpT = cms.double(200)
-staMuonTrackVMuonAssoc.maxpT = cms.double(200)
-staUpdMuonTrackVMuonAssoc.maxpT = cms.double(200)
+# Change pT max of track validator
+trkMuonTrackVTrackAssoc.maxpT = cms.double(100)
+glbMuonTrackVMuonAssoc.maxpT = cms.double(100)
+staMuonTrackVMuonAssoc.maxpT = cms.double(100)
+staUpdMuonTrackVMuonAssoc.maxpT = cms.double(100)
 
 # Muon validation sequences
 hiMuonValidation_seq = cms.Sequence(
