@@ -94,13 +94,13 @@ class MuonTrackValidatorBase {
     {
       dbe_ = edm::Service<DQMStore>().operator->();
       if(useLogPt){
-	maxpT=log10(maxpT);
-	minpT=log10(minpT);
+        maxpT=log10(maxpT);
+        minpT=log10(minpT);
       }
     }
   
   /// Destructor
-  virtual ~MuonTrackValidatorBase(){ }
+  ~MuonTrackValidatorBase(){ }
   
   virtual void doProfileX(TH2 * th2, MonitorElement* me){
     if (th2->GetNbinsX()==me->getNbinsX()){
@@ -126,27 +126,27 @@ class MuonTrackValidatorBase {
     else return pt;
   }
   
-  void fillPlotFromVector(MonitorElement* h, std::vector<int>& vec) {
+  void fillPlotFromVector(MonitorElement* h, std::vector<double>& vec) {
     for (unsigned int j=0; j<vec.size(); j++){
       h->setBinContent(j+1, vec[j]);
     }
   }
 
-  void fillPlotFromVectors(MonitorElement* h, std::vector<int>& numerator, std::vector<int>& denominator,std::string type){
+  void fillPlotFromVectors(MonitorElement* h, std::vector<double>& numerator, std::vector<double>& denominator,std::string type){
     double value,err;
     for (unsigned int j=0; j<numerator.size(); j++){
       if (denominator[j]!=0){
-	if (type=="effic")
-	  value = ((double) numerator[j])/((double) denominator[j]);
-	else if (type=="fakerate")
-	  value = 1-((double) numerator[j])/((double) denominator[j]);
-	else return;
-	err = sqrt( value*(1-value)/(double) denominator[j] );
-	h->setBinContent(j+1, value);
-	h->setBinError(j+1,err);
+        if (type=="effic")
+          value = ((double) numerator[j])/((double) denominator[j]);
+        else if (type=="fakerate")
+          value = 1-((double) numerator[j])/((double) denominator[j]);
+        else return;
+        err = sqrt( value*(1-value)/(double) denominator[j] );
+        h->setBinContent(j+1, value);
+        h->setBinError(j+1,err);
       }
       else {
-	h->setBinContent(j+1, 0);
+        h->setBinContent(j+1, 0);
       }
     }
   }
@@ -178,18 +178,18 @@ class MuonTrackValidatorBase {
     std::vector<double> dzintervalsv;
     std::vector<double> vertposintervalsv;
     std::vector<double> zposintervalsv;
-    std::vector<int>    totSIMveta,totASSveta,totASS2veta,totRECveta;
-    std::vector<int>    totSIMvpT,totASSvpT,totASS2vpT,totRECvpT;
-    std::vector<int>    totSIMv_hit,totASSv_hit,totASS2v_hit,totRECv_hit;
-    std::vector<int>    totSIMv_phi,totASSv_phi,totASS2v_phi,totRECv_phi;
-    std::vector<int>    totSIMv_dxy,totASSv_dxy,totASS2v_dxy,totRECv_dxy;
-    std::vector<int>    totSIMv_dz,totASSv_dz,totASS2v_dz,totRECv_dz;
-    std::vector<int>    totSIMv_vertpos,totASSv_vertpos,totSIMv_zpos,totASSv_zpos; 
+    std::vector<double>    totSIMveta,totASSveta,totASS2veta,totRECveta;
+    std::vector<double>    totSIMvpT,totASSvpT,totASS2vpT,totRECvpT;
+    std::vector<double>    totSIMv_hit,totASSv_hit,totASS2v_hit,totRECv_hit;
+    std::vector<double>    totSIMv_phi,totASSv_phi,totASS2v_phi,totRECv_phi;
+    std::vector<double>    totSIMv_dxy,totASSv_dxy,totASS2v_dxy,totRECv_dxy;
+    std::vector<double>    totSIMv_dz,totASSv_dz,totASS2v_dz,totRECv_dz;
+    std::vector<double>    totSIMv_vertpos,totASSv_vertpos,totSIMv_zpos,totASSv_zpos; 
 
     // for muon Validation
-    std::vector<int>    totASSveta_Quality05, totASSveta_Quality075;
-    std::vector<int>    totASSvpT_Quality05, totASSvpT_Quality075;
-    std::vector<int>    totASSv_phi_Quality05, totASSv_phi_Quality075;
+    std::vector<double>    totASSveta_Quality05, totASSveta_Quality075;
+    std::vector<double>    totASSvpT_Quality05, totASSvpT_Quality075;
+    std::vector<double>    totASSv_phi_Quality05, totASSv_phi_Quality075;
 
     double step=(max-min)/nint;
     std::ostringstream title,name;
@@ -378,6 +378,7 @@ class MuonTrackValidatorBase {
 
   //1D
   std::vector<MonitorElement*> h_tracks, h_fakes, h_hits, h_charge;
+  std::vector<MonitorElement*> h_recocent, h_assoccent, h_assoc2cent, h_simulcent;
   std::vector<MonitorElement*> h_recoeta, h_assoceta, h_assoc2eta, h_simuleta;
   std::vector<MonitorElement*> h_recopT, h_assocpT, h_assoc2pT, h_simulpT;
   std::vector<MonitorElement*> h_recohit, h_assochit, h_assoc2hit, h_simulhit;
@@ -385,7 +386,7 @@ class MuonTrackValidatorBase {
   std::vector<MonitorElement*> h_recodxy, h_assocdxy, h_assoc2dxy, h_simuldxy;
   std::vector<MonitorElement*> h_recodz, h_assocdz, h_assoc2dz, h_simuldz;
   std::vector<MonitorElement*> h_assocvertpos, h_simulvertpos, h_assoczpos, h_simulzpos;
-  std::vector<MonitorElement*> h_pt, h_eta, h_pullTheta,h_pullPhi,h_pullDxy,h_pullDz,h_pullQoverp;
+  std::vector<MonitorElement*> h_pt, h_eta, h_pt2, h_eta2, h_pullTheta,h_pullPhi,h_pullDxy,h_pullDz,h_pullQoverp;
 
   std::vector<MonitorElement*> h_assoceta_Quality05, h_assoceta_Quality075;
   std::vector<MonitorElement*> h_assocpT_Quality05, h_assocpT_Quality075;
@@ -415,19 +416,19 @@ class MuonTrackValidatorBase {
   std::vector< std::vector<double> > dzintervals;
   std::vector< std::vector<double> > vertposintervals;
   std::vector< std::vector<double> > zposintervals;
-  std::vector< std::vector<int> > totSIMeta,totRECeta,totASSeta,totASS2eta;
-  std::vector< std::vector<int> > totSIMpT,totRECpT,totASSpT,totASS2pT;
-  std::vector< std::vector<int> > totSIM_hit,totREC_hit,totASS_hit,totASS2_hit;
-  std::vector< std::vector<int> > totSIM_phi,totREC_phi,totASS_phi,totASS2_phi;
-  std::vector< std::vector<int> > totSIM_dxy,totREC_dxy,totASS_dxy,totASS2_dxy;
-  std::vector< std::vector<int> > totSIM_dz,totREC_dz,totASS_dz,totASS2_dz;
-  std::vector< std::vector<int> > totSIM_vertpos,totASS_vertpos,totSIM_zpos,totASS_zpos;
+  std::vector< std::vector<double> > totSIMeta,totRECeta,totASSeta,totASS2eta;
+  std::vector< std::vector<double> > totSIMpT,totRECpT,totASSpT,totASS2pT;
+  std::vector< std::vector<double> > totSIM_hit,totREC_hit,totASS_hit,totASS2_hit;
+  std::vector< std::vector<double> > totSIM_phi,totREC_phi,totASS_phi,totASS2_phi;
+  std::vector< std::vector<double> > totSIM_dxy,totREC_dxy,totASS_dxy,totASS2_dxy;
+  std::vector< std::vector<double> > totSIM_dz,totREC_dz,totASS_dz,totASS2_dz;
+  std::vector< std::vector<double> > totSIM_vertpos,totASS_vertpos,totSIM_zpos,totASS_zpos;
 
   // for muon Validation (SimToReco distributions for Quality > 0.5, 0.75)
   std::vector<MonitorElement*> h_PurityVsQuality;
-  std::vector< std::vector<int> > totASSeta_Quality05,totASSeta_Quality075;
-  std::vector< std::vector<int> > totASSpT_Quality05, totASSpT_Quality075;
-  std::vector< std::vector<int> > totASS_phi_Quality05, totASS_phi_Quality075;
+  std::vector< std::vector<double> > totASSeta_Quality05,totASSeta_Quality075;
+  std::vector< std::vector<double> > totASSpT_Quality05, totASSpT_Quality075;
+  std::vector< std::vector<double> > totASS_phi_Quality05, totASS_phi_Quality075;
 
 };
 
