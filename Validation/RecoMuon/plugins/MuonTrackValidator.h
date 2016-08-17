@@ -15,6 +15,8 @@
 #include "DataFormats/RecoCandidate/interface/TrackAssociation.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
 
+#include "DataFormats/HeavyIonEvent/interface/Centrality.h"
+
 class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBase {
  public:
   /// Constructor
@@ -46,6 +48,39 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
     nintPhi = pset.getParameter<int>("nintPhi");
     useGsf = pset.getParameter<bool>("useGsf");
     BiDirectional_RecoToSim_association = pset.getParameter<bool>("BiDirectional_RecoToSim_association");
+
+    //// Weighting numbers for different pT bin MC samples in PbPb
+    pTWeight = pset.getParameter<double>("pTWeight");
+    _centralityBinTag=consumes<int>(pset.getParameter<edm::InputTag>("CentralityBinSrc"));
+
+    _centralityRanges = pset.getParameter< std::vector<double> >("centralityRanges");
+    nintcent = _centralityRanges.size() - 1;
+    centralityRanges = new float[nintcent+1];
+    for (int idx=0; idx<=nintcent; idx++) centralityRanges[idx] = _centralityRanges[idx]/2.5;
+
+    _pTRanges = pset.getParameter< std::vector<double> >("pTRanges");
+    if (!_pTRanges.empty()) {
+      nintpT = _pTRanges.size() - 1;
+      std::cout << "nintpT is changed to: " << nintpT << std::endl;
+      pTRanges = new float[nintpT+1];
+      for (int idx=0; idx<=nintpT; idx++) pTRanges[idx] = _pTRanges[idx];
+    } else {
+      pTRanges = new float[1];
+      pTRanges[0] = -1;
+    }
+
+    _rapArr = pset.getParameter< std::vector<double> >("rapArr");
+    _rapArrRes = pset.getParameter< std::vector<double> >("rapArrRes");
+    _ptArrRes = pset.getParameter< std::vector<double> >("ptArrRes");
+    nintRapArr = _rapArr.size() -1;
+    nintRapArrRes = _rapArrRes.size() -1;
+    nintPtArrRes = _ptArrRes.size() -1;
+    rapArr = new float[nintRapArr+1];
+    rapArrRes = new float[nintRapArrRes+1];
+    ptArrRes =  new float[nintPtArrRes+1];
+    for (int idx=0; idx<=nintRapArr; idx++) rapArr[idx] = _rapArr[idx];
+    for (int idx=0; idx<=nintRapArrRes; idx++) rapArrRes[idx] = _rapArrRes[idx];
+    for (int idx=0; idx<=nintPtArrRes; idx++) ptArrRes[idx] = _ptArrRes[idx];
 
     // dump cfg parameters
     edm::LogVerbatim("MuonTrackValidator") << "constructing MuonTrackValidator: " << pset.dump();
@@ -129,10 +164,16 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
 	}
       
     } // for (unsigned int www=0;www<label.size();www++)
-  }
+  } // end of constructor
   
   /// Destructor
-  virtual ~MuonTrackValidator(){ }
+  virtual ~MuonTrackValidator(){
+    delete[] centralityRanges;
+    delete[] pTRanges;
+    delete[] rapArr;
+    delete[] rapArrRes;
+    delete[] ptArrRes;
+  }
 
   /// Method called before the event loop
   //  void beginRun(edm::Run const&, edm::EventSetup const&);
@@ -151,6 +192,8 @@ private:
   void getRecoMomentum (const reco::GsfTrack& gsfTrack, double& pt, double& ptError,
 			double& qoverp, double& qoverpError, double& lambda, double& lambdaError,
 			double& phi, double& phiError) const;
+  Double_t findNcoll(int hiBin);
+  void setUpAsymmVectors();
 
  private:
   std::string dirName_;
@@ -202,6 +245,28 @@ private:
   std::vector<MonitorElement*> ptpull_vs_phi, phipull_vs_phi, thetapull_vs_phi;
   std::vector<MonitorElement*> h_dxypulleta, h_ptpulleta, h_dzpulleta, h_phipulleta, h_thetapulleta;
   std::vector<MonitorElement*> h_ptpullphi, h_phipullphi, h_thetapullphi;
+
+  // Weighting for different pT bins of MC samples (in pbpb)
+  double pTWeight;
+
+  // Centrality related
+  edm::EDGetTokenT<int> _centralityBinTag;
+  int nintcent, centBin;
+
+  std::vector<double> _centralityRanges;
+  std::vector<double> _pTRanges;
+  float *centralityRanges;
+  float *pTRanges;
+
+  std::vector<double> _rapArr;
+  std::vector<double> _rapArrRes;
+  std::vector<double> _ptArrRes;
+  float *rapArr;
+  float *rapArrRes;
+  float *ptArrRes;
+  int nintRapArr;
+  int nintRapArrRes;
+  int nintPtArrRes;
 
 };
 

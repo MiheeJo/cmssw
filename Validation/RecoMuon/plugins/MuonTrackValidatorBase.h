@@ -392,6 +392,7 @@ h->setBinContent(j+1, 0);
 
   //1D
   std::vector<MonitorElement*> h_tracks, h_fakes, h_hits, h_charge;
+  std::vector<MonitorElement*> h_recocent, h_assoccent, h_assoc2cent, h_simulcent;
   std::vector<MonitorElement*> h_recoeta, h_assoceta, h_assoc2eta, h_simuleta;
   std::vector<MonitorElement*> h_recopT, h_assocpT, h_assoc2pT, h_simulpT;
   std::vector<MonitorElement*> h_recohit, h_assochit, h_assoc2hit, h_simulhit;
@@ -399,8 +400,9 @@ h->setBinContent(j+1, 0);
   std::vector<MonitorElement*> h_recodxy, h_assocdxy, h_assoc2dxy, h_simuldxy;
   std::vector<MonitorElement*> h_recodz, h_assocdz, h_assoc2dz, h_simuldz;
   std::vector<MonitorElement*> h_assocvertpos, h_simulvertpos, h_assoczpos, h_simulzpos;
-  std::vector<MonitorElement*> h_pt, h_eta, h_pullTheta,h_pullPhi,h_pullDxy,h_pullDz,h_pullQoverp;
+  std::vector<MonitorElement*> h_cent, h_pt, h_pt2, h_eta, h_eta2, h_pullTheta,h_pullPhi,h_pullDxy,h_pullDz,h_pullQoverp;
 
+  std::vector<MonitorElement*> h_assoccent_Quality05, h_assoccent_Quality075;
   std::vector<MonitorElement*> h_assoceta_Quality05, h_assoceta_Quality075;
   std::vector<MonitorElement*> h_assocpT_Quality05, h_assocpT_Quality075;
   std::vector<MonitorElement*> h_assocphi_Quality05, h_assocphi_Quality075;
@@ -429,6 +431,7 @@ h->setBinContent(j+1, 0);
   std::vector< std::vector<double> > dzintervals;
   std::vector< std::vector<double> > vertposintervals;
   std::vector< std::vector<double> > zposintervals;
+  std::vector< std::vector<int> > totSIMcent,totRECcent,totASScent,totASS2cent;
   std::vector< std::vector<int> > totSIMeta,totRECeta,totASSeta,totASS2eta;
   std::vector< std::vector<int> > totSIMpT,totRECpT,totASSpT,totASS2pT;
   std::vector< std::vector<int> > totSIM_hit,totREC_hit,totASS_hit,totASS2_hit;
@@ -439,6 +442,7 @@ h->setBinContent(j+1, 0);
 
   // for muon Validation (SimToReco distributions for Quality > 0.5, 0.75)
   std::vector<MonitorElement*> h_PurityVsQuality;
+  std::vector< std::vector<int> > totASScent_Quality05,totASScent_Quality075;
   std::vector< std::vector<int> > totASSeta_Quality05,totASSeta_Quality075;
   std::vector< std::vector<int> > totASSpT_Quality05, totASSpT_Quality075;
   std::vector< std::vector<int> > totASS_phi_Quality05, totASS_phi_Quality075;
