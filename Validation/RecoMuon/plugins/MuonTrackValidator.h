@@ -56,7 +56,7 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
     _centralityRanges = pset.getParameter< std::vector<double> >("centralityRanges");
     nintcent = _centralityRanges.size() - 1;
     centralityRanges = new float[nintcent+1];
-    for (int idx=0; idx<=nintcent; idx++) centralityRanges[idx] = _centralityRanges[idx]/2.5;
+    for (int idx=0; idx<=nintcent; idx++) centralityRanges[idx] = _centralityRanges[idx]*2.0;
 
     _pTRanges = pset.getParameter< std::vector<double> >("pTRanges");
     if (!_pTRanges.empty()) {

@@ -36,7 +36,8 @@ void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run con
   for (unsigned int ww=0;ww<associators.size();ww++){
     for (unsigned int www=0;www<label.size();www++){
 
-      std::cout << "ww: " << ww << " www: " << www << std::endl;
+      std::cout << "##bookHistograms## ww: " << ww << "/" << associators.size()
+                << " www: " << www << "/" << label.size() << std::endl;
       ibooker.cd();
       InputTag algo = label[www];
       string dirName=dirName_;
@@ -1013,7 +1014,7 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
       std::cout << "w: " << w << std::endl;
     } // End of for (unsigned int www=0;www<label.size();www++)
   } //END of for (unsigned int ww=0;ww<associators.size();ww++)
-  std::cout << "End of analyze(): w: " << w << std::endl;
+  std::cout << "analyze::::: LAST w: " << w << std::endl;
 }
 
 void MuonTrackValidator::endRun(Run const&, EventSetup const&) {
@@ -1023,7 +1024,7 @@ void MuonTrackValidator::endRun(Run const&, EventSetup const&) {
     for (unsigned int www=0;www<label.size();www++){
       
       //chi2 and #hit vs eta: get mean from 2D histos
-      std::cout << "Before doProfileX(): " << chi2_vs_eta[w] << "\t" << h_chi2meanh[w] << "\n";
+      std::cout << "endRun::::: Before doProfileX(): " << chi2_vs_eta[w] << "\t" << h_chi2meanh[w] << "\n";
       doProfileX(chi2_vs_eta[w],h_chi2meanh[w]);
       doProfileX(nhits_vs_eta[w],h_hits_eta[w]);
       doProfileX(nDThits_vs_eta[w],h_DThits_eta[w]);
@@ -1092,10 +1093,10 @@ void MuonTrackValidator::endRun(Run const&, EventSetup const&) {
     }
   }
   
-  std::cout << "Going to be saved " << out.size() << "\t" << dbe_ << std::endl;
+  std::cout << "Will be saved " << out.size() << "\t" << dbe_ << std::endl;
   if ( out.size() != 0 && dbe_ ) {
     dbe_->save(out);
-    std::cout << "Saved " << w << std::endl;
+    std::cout << "endRun::::: Saved " << w << std::endl;
   }
 }
 
