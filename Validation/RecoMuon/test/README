@@ -1,8 +1,22 @@
-*******************************
-Muon Summary Validation script
-*******************************
+*****************************************************
+Muon Summary Validation script (HEAVY ION VERSION)
+*****************************************************
 
-Version 0
----------
-a) User needs to set input data in the file userparams.py
-b) User needs to run muonReleaseSummary.py
+* INPUT DATASETS: MC RECODEBUG (contains *_mix_MergedTrackTruth_*) and g4SimHits like below:
+process.RECODEBUGoutput.outputCommands.extend(
+    cms.untracked.vstring(
+      'keep *_g4SimHits_MuonCSCHits_*',
+      'keep *_g4SimHits_MuonDTHits_*',
+      'keep *_g4SimHits_MuonME0Hits_*',
+      'keep *_g4SimHits_MuonRPCHits_*',
+    )   
+)
+
+* RUNNING CFG FILE: muonValidation.py
+-- Choose either True or False for 'isPbPb'
+
+* CRAB CONFIG: crabConfig_step3.py
+-- Output file size is not big, you can retrieve them on your working directory.
+
+* DRAW SUMMARY PLOTS: getEff.cpp
+-- Modify this ROOT macro to draw summary plots.
