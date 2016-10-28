@@ -50,13 +50,23 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
     BiDirectional_RecoToSim_association = pset.getParameter<bool>("BiDirectional_RecoToSim_association");
 
     //// Weighting numbers for different pT bin MC samples in PbPb
+    isPbPb = pset.getParameter<bool>("isPbPb");
     pTWeight = pset.getParameter<double>("pTWeight");
     _centralityBinTag=consumes<int>(pset.getParameter<edm::InputTag>("CentralityBinSrc"));
 
-    _centralityRanges = pset.getParameter< std::vector<double> >("centralityRanges");
-    nintcent = _centralityRanges.size() - 1;
-    centralityRanges = new float[nintcent+1];
-    for (int idx=0; idx<=nintcent; idx++) centralityRanges[idx] = _centralityRanges[idx]*2.0;
+    if (isPbPb) {
+      _centralityRanges = pset.getParameter< std::vector<double> >("centralityRanges");
+      nintcent = _centralityRanges.size() - 1;
+      centralityRanges = new float[nintcent+1];
+      for (int idx=0; idx<=nintcent; idx++) centralityRanges[idx] = _centralityRanges[idx]*2.0;
+    } else {
+      _centralityRanges = pset.getParameter< std::vector<double> >("centralityRanges");
+      nintcent = 1;
+      centralityRanges = new float[nintcent+1];
+      centralityRanges[0] = 0;
+      centralityRanges[1] = 1;
+      std::cout << "FLAG isPbPb is not set >>>> centrality ranges are set to [0, 1]" << std::endl;
+    }
 
     _pTRanges = pset.getParameter< std::vector<double> >("pTRanges");
     if (!_pTRanges.empty()) {
@@ -247,6 +257,7 @@ private:
   std::vector<MonitorElement*> h_ptpullphi, h_phipullphi, h_thetapullphi;
 
   // Weighting for different pT bins of MC samples (in pbpb)
+  bool isPbPb;
   double pTWeight;
 
   // Centrality related

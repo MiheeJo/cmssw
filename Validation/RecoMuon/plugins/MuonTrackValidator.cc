@@ -338,13 +338,22 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
   }
   
   // centrality settings loading
-  edm::Handle<int> cbin_;
-  event.getByToken(_centralityBinTag,cbin_);
-  centBin = *cbin_;
-
-  double weighting = findNcoll(centBin) * pTWeight;
-  edm::LogVerbatim("MuonTrackValidator") << "centrality: " << centBin << "\t"
-                                         << "NcollWeight: " << findNcoll(centBin) << "\n";
+  double weighting;
+  if (isPbPb) {
+    edm::Handle<int> cbin_;
+    event.getByToken(_centralityBinTag,cbin_);
+    centBin = *cbin_;
+    
+    weighting = findNcoll(centBin) * pTWeight;
+  } else {
+    weighting = 1 ;
+    centBin = 0;
+  }
+  edm::LogVerbatim("MuonTrackValidator") << "centrality: " << centBin << "\t";
+  if (isPbPb)
+    edm::LogVerbatim("MuonTrackValidator") << "NcollWeight: " << findNcoll(centBin) << "\n";
+  else
+    edm::LogVerbatim("MuonTrackValidator") << "NcollWeight: " << weighting << "\n";
 
   int w=0;
   for (unsigned int ww=0;ww<associators.size();ww++){
