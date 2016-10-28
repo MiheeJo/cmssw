@@ -9,7 +9,7 @@ config.General.transferLogs = True
 
 config.section_("JobType")
 config.JobType.pluginName = 'Analysis'
-config.JobType.psetName = 'muonValidation_pbpb.py'
+config.JobType.psetName = 'muonValidation.py'
 config.JobType.outputFiles = ['validation.root']
 config.JobType.pyCfgParams = ['noprint']
 config.JobType.maxMemoryMB = 2500
