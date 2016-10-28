@@ -68,28 +68,21 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
       std::cout << "FLAG isPbPb is not set >>>> centrality ranges are set to [0, 1]" << std::endl;
     }
 
-    _pTRanges = pset.getParameter< std::vector<double> >("pTRanges");
-    if (!_pTRanges.empty()) {
-      nintpT = _pTRanges.size() - 1;
-      std::cout << "nintpT is changed to: " << nintpT << std::endl;
-      pTRanges = new float[nintpT+1];
-      for (int idx=0; idx<=nintpT; idx++) pTRanges[idx] = _pTRanges[idx];
-    } else {
-      pTRanges = new float[1];
-      pTRanges[0] = -1;
-    }
-
     _rapArr = pset.getParameter< std::vector<double> >("rapArr");
     _rapArrRes = pset.getParameter< std::vector<double> >("rapArrRes");
+    _ptArr = pset.getParameter< std::vector<double> >("ptArr");
     _ptArrRes = pset.getParameter< std::vector<double> >("ptArrRes");
     nintRapArr = _rapArr.size() -1;
     nintRapArrRes = _rapArrRes.size() -1;
+    nintPtArr = _ptArr.size() -1;
     nintPtArrRes = _ptArrRes.size() -1;
     rapArr = new float[nintRapArr+1];
     rapArrRes = new float[nintRapArrRes+1];
+    ptArr =  new float[nintPtArr+1];
     ptArrRes =  new float[nintPtArrRes+1];
     for (int idx=0; idx<=nintRapArr; idx++) rapArr[idx] = _rapArr[idx];
     for (int idx=0; idx<=nintRapArrRes; idx++) rapArrRes[idx] = _rapArrRes[idx];
+    for (int idx=0; idx<=nintPtArr; idx++) ptArr[idx] = _ptArr[idx];
     for (int idx=0; idx<=nintPtArrRes; idx++) ptArrRes[idx] = _ptArrRes[idx];
 
     // dump cfg parameters
@@ -179,9 +172,9 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
   /// Destructor
   virtual ~MuonTrackValidator(){
     delete[] centralityRanges;
-    delete[] pTRanges;
     delete[] rapArr;
     delete[] rapArrRes;
+    delete[] ptArr;
     delete[] ptArrRes;
   }
 
@@ -203,7 +196,6 @@ private:
 			double& qoverp, double& qoverpError, double& lambda, double& lambdaError,
 			double& phi, double& phiError) const;
   Double_t findNcoll(int hiBin);
-  void setUpAsymmVectors();
 
  private:
   std::string dirName_;
@@ -265,18 +257,19 @@ private:
   int nintcent, centBin;
 
   std::vector<double> _centralityRanges;
-  std::vector<double> _pTRanges;
   float *centralityRanges;
-  float *pTRanges;
 
   std::vector<double> _rapArr;
   std::vector<double> _rapArrRes;
   std::vector<double> _ptArrRes;
+  std::vector<double> _ptArr;
   float *rapArr;
   float *rapArrRes;
+  float *ptArr;
   float *ptArrRes;
   int nintRapArr;
   int nintRapArrRes;
+  int nintPtArr;
   int nintPtArrRes;
 
 };

@@ -61,18 +61,18 @@ void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run con
       ibooker.setCurrentFolder(dirName.c_str());
 
       setUpVectors();
-      if (!_pTRanges.empty()) setUpAsymmVectors();
       centBin = -1; // initialize centrality bin
-      std::cout << "nintpT : " << nintpT << " " << pTintervals[j].size() << std::endl;
-      std::cout << "pTRanges: ";
-      for (int idx=0; idx<=nintpT ; idx++) std::cout << pTRanges[idx] << " " << pTintervals[j][idx] << " ";
-      std::cout << std::endl;
+      std::cout << "nintPtArr : " << nintPtArr << std::endl;
+      // initialize pTintervals with asymmetric binning
+      std::vector<double> _pTintervals;
+      for (int idx=0; idx<=nintPtArr; idx++) _pTintervals.push_back(ptArr[idx]);
+      pTintervals.clear();
+      pTintervals.push_back(_pTintervals);
 
       ibooker.goUp();
       string subDirName = dirName + "/simulation";
       ibooker.setCurrentFolder(subDirName.c_str());
-      if (!_pTRanges.empty()) h_ptSIM.push_back( ibooker.book1D("ptSIM", "generated p_{t}", nintpT, pTRanges) );
-      else h_ptSIM.push_back( ibooker.book1D("ptSIM", "generated p_{t}", nintpT, minpT, maxpT ) );
+      h_ptSIM.push_back( ibooker.book1D("ptSIM", "generated p_{t}", nintPtArr, ptArr) );
       h_etaSIM.push_back( ibooker.book1D("etaSIM", "generated pseudorapidity", nint, min, max ) );
       h_tracksSIM.push_back( ibooker.book1D("tracksSIM","number of simulated tracks",200,-0.5,99.5) );
       h_vertposSIM.push_back( ibooker.book1D("vertposSIM","Transverse position of sim vertices",100,0.,120.) );
@@ -98,35 +98,21 @@ void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run con
       h_assoc2eta.push_back( ibooker.book1D("num_assoc(recoToSim)_eta","N of associated (recoToSim) tracks vs eta",nint,min,max) );
       h_simuleta.push_back( ibooker.book1D("num_simul_eta","N of simulated tracks vs eta",nint,min,max) );
 
-      if (!_pTRanges.empty()) {
-        h_recopT.push_back( ibooker.book1D("num_reco_pT","N of reco track vs pT",nintpT,pTRanges) );
-        h_assocpT.push_back( ibooker.book1D("num_assoc(simToReco)_pT","N of associated tracks (simToReco) vs pT",nintpT,pTRanges) );
-        h_assoc2pT.push_back( ibooker.book1D("num_assoc(recoToSim)_pT","N of associated (recoToSim) tracks vs pT",nintpT,pTRanges) );
-        h_simulpT.push_back( ibooker.book1D("num_simul_pT","N of simulated tracks vs pT",nintpT,pTRanges) );
-      } else {
-        h_recopT.push_back( ibooker.book1D("num_reco_pT","N of reco track vs pT",nintpT,minpT,maxpT) );
-        h_assocpT.push_back( ibooker.book1D("num_assoc(simToReco)_pT","N of associated tracks (simToReco) vs pT",nintpT,minpT,maxpT) );
-        h_assoc2pT.push_back( ibooker.book1D("num_assoc(recoToSim)_pT","N of associated (recoToSim) tracks vs pT",nintpT,minpT,maxpT) );
-        h_simulpT.push_back( ibooker.book1D("num_simul_pT","N of simulated tracks vs pT",nintpT,minpT,maxpT) );
-      }
+      h_recopT.push_back( ibooker.book1D("num_reco_pT","N of reco track vs pT",nintPtArr,ptArr) );
+      h_assocpT.push_back( ibooker.book1D("num_assoc(simToReco)_pT","N of associated tracks (simToReco) vs pT",nintPtArr,ptArr) );
+      h_assoc2pT.push_back( ibooker.book1D("num_assoc(recoToSim)_pT","N of associated (recoToSim) tracks vs pT",nintPtArr,ptArr) );
+      h_simulpT.push_back( ibooker.book1D("num_simul_pT","N of simulated tracks vs pT",nintPtArr,ptArr) );
 
       for (int idx1=0; idx1<nintRapArr; idx1++) {
-        for (int idx2=0; idx2<nintPtArrRes; idx2++) {
-          h_recocent.push_back( ibooker.book1D(Form("num_reco_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of reco track vs cent",nintcent,centralityRanges) );
-          h_assoccent.push_back( ibooker.book1D(Form("num_assoc(simToReco)_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of associated tracks (simToReco) vs cent",nintcent,centralityRanges) );
-          h_assoc2cent.push_back( ibooker.book1D(Form("num_assoc(recoToSim)_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of associated (recoToSim) tracks vs cent",nintcent,centralityRanges) );
-          h_simulcent.push_back( ibooker.book1D(Form("num_simul_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of simulated tracks vs cent",nintcent,centralityRanges) );
-          if (!_pTRanges.empty()) {
-            h_recopT.push_back( ibooker.book1D(Form("num_reco_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of reco track vs pT",nintpT,pTRanges) );
-            h_assocpT.push_back( ibooker.book1D(Form("num_assoc(simToReco)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of associated tracks (simToReco) vs pT",nintpT,pTRanges) );
-            h_assoc2pT.push_back( ibooker.book1D(Form("num_assoc(recoToSim)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of associated (recoToSim) tracks vs pT",nintpT,pTRanges) );
-            h_simulpT.push_back( ibooker.book1D(Form("num_simul_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of simulated tracks vs pT",nintpT,pTRanges) );
-          } else {
-            h_recopT.push_back( ibooker.book1D(Form("num_reco_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of reco track vs pT",nintpT,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10) );
-            h_assocpT.push_back( ibooker.book1D(Form("num_assoc(simToReco)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of associated tracks (simToReco) vs pT",nintpT,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10) );
-            h_assoc2pT.push_back( ibooker.book1D(Form("num_assoc(recoToSim)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of associated (recoToSim) tracks vs pT",nintpT,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10) );
-            h_simulpT.push_back( ibooker.book1D(Form("num_simul_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10),"N of simulated tracks vs pT",nintpT,ptArrRes[idx2]*10,ptArrRes[idx2+1]*10) );
-          }
+        for (int idx2=0; idx2<nintPtArr; idx2++) {
+          h_recocent.push_back( ibooker.book1D(Form("num_reco_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of reco track vs cent",nintcent,centralityRanges) );
+          h_assoccent.push_back( ibooker.book1D(Form("num_assoc(simToReco)_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of associated tracks (simToReco) vs cent",nintcent,centralityRanges) );
+          h_assoc2cent.push_back( ibooker.book1D(Form("num_assoc(recoToSim)_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of associated (recoToSim) tracks vs cent",nintcent,centralityRanges) );
+          h_simulcent.push_back( ibooker.book1D(Form("num_simul_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of simulated tracks vs cent",nintcent,centralityRanges) );
+          h_recopT.push_back( ibooker.book1D(Form("num_reco_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of reco track vs pT",nintPtArr,ptArr) );
+          h_assocpT.push_back( ibooker.book1D(Form("num_assoc(simToReco)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of associated tracks (simToReco) vs pT",nintPtArr,ptArr) );
+          h_assoc2pT.push_back( ibooker.book1D(Form("num_assoc(recoToSim)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of associated (recoToSim) tracks vs pT",nintPtArr,ptArr) );
+          h_simulpT.push_back( ibooker.book1D(Form("num_simul_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[idx1]*10,rapArr[idx1+1]*10,ptArr[idx2]*10,ptArr[idx2+1]*10),"N of simulated tracks vs pT",nintPtArr,ptArr) );
         }
       }
       //
@@ -212,25 +198,20 @@ void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run con
 
       ptres_vs_eta.push_back(ibooker.book2D("ptres_vs_eta","ptres_vs_eta",nint,min,max, ptRes_nbin, ptRes_rangeMin, ptRes_rangeMax));
       ptres_vs_phi.push_back( ibooker.book2D("ptres_vs_phi","p_{t} res vs #phi",nintPhi,minPhi,maxPhi, ptRes_nbin, ptRes_rangeMin, ptRes_rangeMax));
-      if (!_pTRanges.empty()) ptres_vs_pt.push_back(ibooker.book2D("ptres_vs_pt","ptres_vs_pt",nintpT,pTRanges[0],pTRanges[nintpT], ptRes_nbin, ptRes_rangeMin, ptRes_rangeMax));
-      else ptres_vs_pt.push_back(ibooker.book2D("ptres_vs_pt","ptres_vs_pt",nintpT,minpT,maxpT, ptRes_nbin, ptRes_rangeMin, ptRes_rangeMax));
+      ptres_vs_pt.push_back(ibooker.book2D("ptres_vs_pt","ptres_vs_pt",nintPtArr, ptArr[0], ptArr[nintPtArr], ptRes_nbin, ptRes_rangeMin, ptRes_rangeMax));
 
       cotThetares_vs_eta.push_back(ibooker.book2D("cotThetares_vs_eta","cotThetares_vs_eta",nint,min,max,cotThetaRes_nbin, cotThetaRes_rangeMin, cotThetaRes_rangeMax));
-      if (!_pTRanges.empty()) cotThetares_vs_pt.push_back(ibooker.book2D("cotThetares_vs_pt","cotThetares_vs_pt",nintpT,pTRanges[0],pTRanges[nintpT], cotThetaRes_nbin, cotThetaRes_rangeMin, cotThetaRes_rangeMax));
-      else cotThetares_vs_pt.push_back(ibooker.book2D("cotThetares_vs_pt","cotThetares_vs_pt",nintpT,minpT,maxpT, cotThetaRes_nbin, cotThetaRes_rangeMin, cotThetaRes_rangeMax));
+      cotThetares_vs_pt.push_back(ibooker.book2D("cotThetares_vs_pt","cotThetares_vs_pt",nintPtArr, ptArr[0], ptArr[nintPtArr], cotThetaRes_nbin, cotThetaRes_rangeMin, cotThetaRes_rangeMax));
 
       phires_vs_eta.push_back(ibooker.book2D("phires_vs_eta","phires_vs_eta",nint,min,max, phiRes_nbin, phiRes_rangeMin, phiRes_rangeMax));
-      if (!_pTRanges.empty()) phires_vs_pt.push_back(ibooker.book2D("phires_vs_pt","phires_vs_pt",nintpT,pTRanges[0],pTRanges[nintpT], phiRes_nbin, phiRes_rangeMin, phiRes_rangeMax));
-      else phires_vs_pt.push_back(ibooker.book2D("phires_vs_pt","phires_vs_pt",nintpT,minpT,maxpT, phiRes_nbin, phiRes_rangeMin, phiRes_rangeMax));
+      phires_vs_pt.push_back(ibooker.book2D("phires_vs_pt","phires_vs_pt",nintPtArr, ptArr[0], ptArr[nintPtArr], phiRes_nbin, phiRes_rangeMin, phiRes_rangeMax));
       phires_vs_phi.push_back(ibooker.book2D("phires_vs_phi","#phi res vs #phi",nintPhi,minPhi,maxPhi,phiRes_nbin, phiRes_rangeMin, phiRes_rangeMax));
 
       dxyres_vs_eta.push_back(ibooker.book2D("dxyres_vs_eta","dxyres_vs_eta",nint,min,max,dxyRes_nbin, dxyRes_rangeMin, dxyRes_rangeMax));
-      if (!_pTRanges.empty()) dxyres_vs_pt.push_back( ibooker.book2D("dxyres_vs_pt","dxyres_vs_pt",nintpT,pTRanges[0],pTRanges[nintpT], dxyRes_nbin, dxyRes_rangeMin, dxyRes_rangeMax));
-      else dxyres_vs_pt.push_back( ibooker.book2D("dxyres_vs_pt","dxyres_vs_pt",nintpT,minpT,maxpT,dxyRes_nbin, dxyRes_rangeMin, dxyRes_rangeMax));
+      dxyres_vs_pt.push_back( ibooker.book2D("dxyres_vs_pt","dxyres_vs_pt",nintPtArr, ptArr[0], ptArrRes[nintPtArr],dxyRes_nbin, dxyRes_rangeMin, dxyRes_rangeMax));
 
       dzres_vs_eta.push_back(ibooker.book2D("dzres_vs_eta","dzres_vs_eta",nint,min,max,dzRes_nbin, dzRes_rangeMin, dzRes_rangeMax));
-      if (!_pTRanges.empty()) dzres_vs_pt.push_back(ibooker.book2D("dzres_vs_pt","dzres_vs_pt",nintpT,pTRanges[0],pTRanges[nintpT], dzRes_nbin, dzRes_rangeMin, dzRes_rangeMax));
-      else dzres_vs_pt.push_back(ibooker.book2D("dzres_vs_pt","dzres_vs_pt",nintpT,minpT,maxpT,dzRes_nbin, dzRes_rangeMin, dzRes_rangeMax));
+      dzres_vs_pt.push_back(ibooker.book2D("dzres_vs_pt","dzres_vs_pt",nintPtArr, ptArr[0], ptArrRes[nintPtArr],dzRes_nbin, dzRes_rangeMin, dzRes_rangeMax));
 
       ptmean_vs_eta_phi.push_back(ibooker.bookProfile2D("ptmean_vs_eta_phi","mean p_{t} vs #eta and #phi",nintPhi,minPhi,maxPhi,nint,min,max,1000,0,1000));
       phimean_vs_eta_phi.push_back(ibooker.bookProfile2D("phimean_vs_eta_phi","mean #phi vs #eta and #phi",nintPhi,minPhi,maxPhi,nint,min,max,nintPhi,minPhi,maxPhi));
@@ -254,13 +235,8 @@ void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run con
         h_PurityVsQuality.push_back( ibooker.book2D("PurityVsQuality","Purity vs Quality (MABH)",20,0.01,1.01,20,0.01,1.01) );
         h_assoceta_Quality05.push_back( ibooker.book1D("num_assoc(simToReco)_eta_Q05","N of associated tracks (simToReco) vs eta (Quality>0.5)",nint,min,max) );
         h_assoceta_Quality075.push_back( ibooker.book1D("num_assoc(simToReco)_eta_Q075","N of associated tracks (simToReco) vs eta (Quality>0.75)",nint,min,max) );
-        if (!_pTRanges.empty()) {
-          h_assocpT_Quality05.push_back( ibooker.book1D("num_assoc(simToReco)_pT_Q05","N of associated tracks (simToReco) vs pT (Quality>0.5)",nintpT,pTRanges) );
-          h_assocpT_Quality075.push_back( ibooker.book1D("num_assoc(simToReco)_pT_Q075","N of associated tracks (simToReco) vs pT (Quality>0.75)",nintpT,pTRanges) );
-        } else {
-          h_assocpT_Quality05.push_back( ibooker.book1D("num_assoc(simToReco)_pT_Q05","N of associated tracks (simToReco) vs pT (Quality>0.5)",nintpT,minpT,maxpT) );
-          h_assocpT_Quality075.push_back( ibooker.book1D("num_assoc(simToReco)_pT_Q075","N of associated tracks (simToReco) vs pT (Quality>0.75)",nintpT,minpT,maxpT) );
-        }
+        h_assocpT_Quality05.push_back( ibooker.book1D("num_assoc(simToReco)_pT_Q05","N of associated tracks (simToReco) vs pT (Quality>0.5)",nintPtArr,ptArr) );
+        h_assocpT_Quality075.push_back( ibooker.book1D("num_assoc(simToReco)_pT_Q075","N of associated tracks (simToReco) vs pT (Quality>0.75)",nintPtArr,ptArr) );
         h_assocphi_Quality05.push_back( ibooker.book1D("num_assoc(simToReco)_phi_Q05","N of associated tracks (simToReco) vs phi (Quality>0.5)",nintPhi,minPhi,maxPhi) );
         h_assocphi_Quality075.push_back( ibooker.book1D("num_assoc(simToReco)_phi_Q075","N of associated tracks (simToReco) vs phi (Quality>0.75)",nintPhi,minPhi,maxPhi) );
       }
@@ -501,9 +477,9 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         if (TP_is_matched) h_assoccent[w]->Fill(centBin,weighting);
         for (int idx1=0; idx1<nintRapArr; idx1++) {
           if (getEta(momentumTP.eta())>rapArr[idx1] && getEta(momentumTP.eta())<rapArr[idx1+1]) {
-            for (int idx2=0; idx2<nintPtArrRes; idx2++) {
-              if (getPt(sqrt(momentumTP.perp2()))>ptArrRes[idx2] && getPt(sqrt(momentumTP.perp2()))<ptArrRes[idx2+1]) {
-                int idx = nintPtArrRes*idx1 + idx2+1;
+            for (int idx2=0; idx2<nintPtArr; idx2++) {
+              if (getPt(sqrt(momentumTP.perp2()))>ptArr[idx2] && getPt(sqrt(momentumTP.perp2()))<ptArr[idx2+1]) {
+                int idx = nintPtArr*idx1 + idx2+1;
                 // h_simulcent[0] is for merged case: differential ones should start from idx=1
                 h_simulcent[idx]->Fill(centBin,weighting);
                 if (TP_is_matched) h_assoccent[idx]->Fill(centBin,weighting);
@@ -576,9 +552,9 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
 
         for (int idx1=0; idx1<nintRapArr; idx1++) {
           if (getEta(momentumTP.eta())>rapArr[idx1] && getEta(momentumTP.eta())<rapArr[idx1+1]) {
-            for (int idx2=0; idx2<nintPtArrRes; idx2++) {
-              if (getPt(sqrt(momentumTP.perp2()))>ptArrRes[idx2] && getPt(sqrt(momentumTP.perp2()))<ptArrRes[idx2+1]) {
-                int idx = nintPtArrRes*idx1 + idx2+1;
+            for (int idx2=0; idx2<nintPtArr; idx2++) {
+              if (getPt(sqrt(momentumTP.perp2()))>ptArr[idx2] && getPt(sqrt(momentumTP.perp2()))<ptArr[idx2+1]) {
+                int idx = nintPtArr*idx1 + idx2+1;
                 // h_simulpT[0] is for merged case: differential ones should start from idx=1
                 h_simulpT[idx]->Fill(getPt(sqrt(momentumTP.perp2())),weighting);
                 if (TP_is_matched) h_assocpT[idx]->Fill(getPt(sqrt(momentumTP.perp2())),weighting);
@@ -725,9 +701,9 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         if (Track_is_matched) h_assoc2cent[w]->Fill(centBin,weighting);
         for (int idx1=0; idx1<nintRapArr; idx1++) {
           if (getEta(track->momentum().eta())>rapArr[idx1] && getEta(track->momentum().eta())<rapArr[idx1+1]) {
-            for (int idx2=0; idx2<nintPtArrRes; idx2++) {
-              if (track->pt()>ptArrRes[idx2] && track->pt()<ptArrRes[idx2+1]) {
-                int idx = nintPtArrRes*idx1 + idx2+1;
+            for (int idx2=0; idx2<nintPtArr; idx2++) {
+              if (track->pt()>ptArr[idx2] && track->pt()<ptArr[idx2+1]) {
+                int idx = nintPtArr*idx1 + idx2+1;
                 // h_recocent[0] is for merged case: differential ones should start from idx=1
                 h_recocent[idx]->Fill(centBin,weighting);
                 if (Track_is_matched) h_assoc2cent[idx]->Fill(centBin,weighting);
@@ -769,16 +745,16 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
 
         for (int idx1=0; idx1<nintRapArr; idx1++) {
           if (getEta(track->momentum().eta())>rapArr[idx1] && getEta(track->momentum().eta())<rapArr[idx1+1]) {
-            for (int idx2=0; idx2<nintPtArrRes; idx2++) {
-              if (getPt(sqrt(track->momentum().perp2()))>ptArrRes[idx2] && getPt(sqrt(track->momentum().perp2()))<ptArrRes[idx2+1]) {
-                int idx = nintPtArrRes*idx1 + idx2+1;
+            for (int idx2=0; idx2<nintPtArr; idx2++) {
+              if (getPt(sqrt(track->momentum().perp2()))>ptArr[idx2] && getPt(sqrt(track->momentum().perp2()))<ptArr[idx2+1]) {
+                int idx = nintPtArr*idx1 + idx2+1;
                 // h_simulpT[0] is for merged case: differential ones should start from idx=1
                 h_recopT[idx]->Fill(getPt(sqrt(track->momentum().perp2())),weighting);
                 if (Track_is_matched) h_assoc2pT[idx]->Fill(getPt(sqrt(track->momentum().perp2())),weighting);
               }
             }
           }
-        } // End for (unsigned int f=0; f<pTintervals[w].size()-1; f++)
+        } // End for (unsigned int f=0; f<ptArr[w].size()-1; f++)
 
         for (unsigned int f=0; f<dxyintervals[w].size()-1; f++){
           if (track->dxy(bs.position())>dxyintervals[w][f]&&
@@ -893,6 +869,8 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         double ptError = ptErrorRec;
         double ptres = ptRec - ptSim;
         double etares = track->eta()-momentumTP.Eta();
+        double ptres2 = (ptRec - ptSim)/ptSim;  // Get (sim-reco)/sim resolution
+        double etares2 = (track->eta()-momentumTP.Eta())/momentumTP.Eta();  // Get (sim-reco)/sim resolution
         double dxyRec = track->dxy(bs.position());
         double dzRec = track->dz(bs.position());
         // eta residue; pt, k, theta, phi, dxy, dz pulls
@@ -953,6 +931,19 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         
         h_pt[w]->Fill(ptres/ptError,weighting);
         h_eta[w]->Fill(etares,weighting);
+        h_pt2[0]->Fill(ptres2,weighting);
+        h_eta2[0]->Fill(etares2,weighting);
+        for (int idx1=0; idx1<nintRapArrRes; idx1++) { // Same of rapArr size + 1 (for merged case) in beginRun()
+          if (getEta(momentumTP.Eta())>rapArrRes[idx1] && getEta(momentumTP.Eta())<rapArrRes[idx1+1]) {
+            for (int idx2=0; idx2<nintPtArrRes; idx2++) { // Same of ptArr size + 1 (for merged case) in beginRun()
+              if (ptSim>ptArrRes[idx2] && ptSim<ptArrRes[idx2+1]) {
+                int idx = nintPtArrRes*idx1 + idx2+1;
+                h_pt2[idx]->Fill(ptres2,weighting);
+                h_eta2[idx]->Fill(etares2,weighting);
+              }
+            }
+          }
+        }
         etares_vs_eta[w]->Fill(getEta(track->eta()),etares,weighting);
         
         //chi2 and #hit vs eta: fill 2D histos
@@ -1135,12 +1126,4 @@ void MuonTrackValidator::getRecoMomentum (const reco::GsfTrack& gsfTrack,
   phiError = gsfTrack.phiModeError(); 
 }
 
-void MuonTrackValidator::setUpAsymmVectors () {
-  if (!_pTRanges.empty()) {
-    std::vector<double> pTintervalsv;
-    for (int idx=0; idx<=nintpT; idx++) pTintervalsv.push_back(pTRanges[idx]);
 
-    pTintervals.clear();
-    pTintervals.push_back(pTintervalsv);
-  }
-}
