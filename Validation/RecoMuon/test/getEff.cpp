@@ -3,6 +3,7 @@
 #include <TTree.h>
 #include <TKey.h>
 #include <TH1.h>
+#include <TGraphAsymmErrors.h>
 #include <TMath.h>
 #include <TF1.h>
 #include <TFile.h>
@@ -33,34 +34,6 @@ double getAvgEffInRapPt(TH1D *h, double xmin, double xmax) {
   return avgEff;
 }
 
-void getCorrectedEffErr(const int nbins, TH1 *hrec, TH1 *hgen, TH1 *heff) {
-  for (int a=0; a<nbins; a++) {
-    double genInt = hgen->GetBinContent(a+1);
-    double genErr = hgen->GetBinError(a+1);
-    double recInt = hrec->GetBinContent(a+1);
-    double recErr = hrec->GetBinError(a+1);
-    double eff = recInt / genInt;
-
-    double tmpErrGen1 = TMath::Power(eff,2) / TMath::Power(genInt,2);
-    double tmpErrRec1 = TMath::Power(recErr,2);
-    double tmpErr1 = tmpErrGen1 * tmpErrRec1;
-
-    double tmpErrGen2 = TMath::Power(1-eff,2) / TMath::Power(genInt,2);
-    double tmpErrRec2 = TMath::Abs(TMath::Power(genErr,2) - TMath::Power(recErr,2));
-    double tmpErr2 = tmpErrGen2 * tmpErrRec2;
-    double effErr = TMath::Sqrt(tmpErr1 + tmpErr2);
-
-    if (genInt == 0) {
-      heff->SetBinContent(a+1, 0);
-      heff->SetBinError(a+1, 0);
-    } else {
-      heff->SetBinContent(a+1, eff);
-//      heff->SetBinError(a+1, effErr);
-      heff->SetBinError(a+1, 0); // This study doesn't have correct errors
-    }
-  }
-}
-
 
 ////////////////
 /// * MAIN * ///
@@ -72,21 +45,18 @@ int getEff(void)
 
   TH1::SetDefaultSumw2();
   
-//  TFile *froot = new TFile("/tmp/miheejo/validation_jpsiMuMu_JpsiPt69_v5.root");
-  TFile *froot = new TFile("/afs/cern.ch/user/m/miheejo/public/HIN-14-005/TnP/validation_jpsiMuMu_AllSet_v5.root");
-//  TFile *froot = new TFile("/afs/cern.ch/user/m/miheejo/public/HIN-14-005/TnP/validationEDM.root");
+  TFile *froot = new TFile("./validation.root");
   if (froot->IsZombie()) return 1;
-  froot->cd("DQMData/Muons/RecoMuonV/MultiTrack/standAloneMuons_UpdatedAtVtx_tpToStaUpdMuonAssociation/");
+  froot->cd("DQMData/Muons/RecoMuonV/MultiTrack/standAloneMuons_UpdAtVtx/");
   TDirectory *root_dir = gDirectory;
   root_dir->cd();
  
-  double rapArrRes[] = {0, 0.8, 1.6, 2.4};
-  double rapArr[] = {0, 0.8, 1.6, 2.4};
-  double ptArrRes[] = {0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20};
-//  double ptArrRes[] = {0, 3, 6.5, 10, 20};
-  const int nintPtArrRes = sizeof(ptArrRes)/sizeof(double) -1;
+  // rapArrRes, ptArrRes should be hand-written and same as in muonValidation.py file
+  double rapArrRes[] = {0, 1.2, 2.1, 2.4};
+  double ptArrRes[] = {0,1.5,3,4.5,6,7.5,9,10,12,14,20};
   const int nintRapArrRes = sizeof(rapArrRes)/sizeof(double) -1;
-  const int nintRapArr = sizeof(rapArr)/sizeof(double) -1;
+  const int nintPtArrRes = sizeof(ptArrRes)/sizeof(double) -1;
+  
   TH1F *etaSimRecRes[50], *ptSimRecRes[50];
   TH1F *etaSimRecResAll[50], *ptSimRecResAll[50];
   TH1F *num_assoc_simToReco_pT[50], *num_simul_pT[50];
@@ -95,12 +65,49 @@ int getEff(void)
   TH1F *etaSIM;
   TH1F *pTSIM;
 
-  const int fitSize = nintPtArrRes*nintRapArrRes;
-  double ptSimRecResFitResults[fitSize]={0}, etaSimRecResFitResults[fitSize]={0};
-  double ptSimRecResFitErrors[fitSize]={0}, etaSimRecResFitErrors[fitSize]={0};
+  root_dir->GetObject("num_assoc(simToReco)_eta",num_assoc_simToReco_eta);
+  root_dir->GetObject("num_assoc(simToReco)_pT",num_assoc_simToReco_pT[0]);
+  root_dir->GetObject("num_assoc(simToReco)_cent",num_assoc_simToReco_cent[0]);
+  root_dir->GetObject("num_simul_eta",num_simul_eta);
+  root_dir->GetObject("simulation/etaSIM",etaSIM);
+  root_dir->GetObject("simulation/ptSIM",pTSIM);
 
-  root_dir->GetObject("ptSimRecRes",ptSimRecRes[0]);
+  const int nbins_eta = nintRapArrRes;
+  const int nbins_pT = num_assoc_simToReco_pT[0]->GetNbinsX();
+  const int nbins_cent = num_assoc_simToReco_cent[0]->GetNbinsX();
+  double *bins_eta = new double[nbins_eta+1];
+  double *bins_pT = new double[nbins_pT+1];
+  double *bins_cent = new double[nbins_cent+1];
+  cout << "nbins_eta: " << nbins_eta << " nbins_pT: " << nbins_pT << " nbins_cent: " << nbins_cent << endl;
+  cout << "bins_eta: " <<endl;
+  bins_eta[0]=0;
+  for (int i=1; i<=nbins_eta; i++) {
+    //bins_eta[i] = num_assoc_simToReco_eta->GetXaxis()->GetBinUpEdge(i);
+    bins_eta[i] = rapArrRes[i];
+    cout << bins_eta[i] << " ";
+  }
+  cout << endl << "bins_pT: " << endl;
+  bins_pT[0]=0;
+  for (int i=1; i<=nbins_pT; i++) {
+    bins_pT[i] = num_assoc_simToReco_pT[0]->GetXaxis()->GetBinUpEdge(i);
+    cout << bins_pT[i] << " ";
+  }
+  cout << endl << "bins_cent: " << endl;
+  bins_cent[0]=0;
+  for (int i=1; i<=nbins_cent; i++) {
+    bins_cent[i] = num_assoc_simToReco_cent[0]->GetXaxis()->GetBinUpEdge(i);
+    cout << bins_cent[i] << " ";
+  }
+  cout << endl;
+
+  const int fitSize = nintPtArrRes*nintRapArrRes;
+  double *ptSimRecResFitResults = new double[fitSize];
+  double *etaSimRecResFitResults = new double[fitSize];
+  double *ptSimRecResFitErrors = new double[fitSize];
+  double *etaSimRecResFitErrors = new double[fitSize];
+
   root_dir->GetObject("etaSimRecRes",etaSimRecRes[0]);
+  root_dir->GetObject("ptSimRecRes",ptSimRecRes[0]);
 
   // Resolution summary (x-axis: pt)
   // 1/ For same eta bin, read each pt plot and fit
@@ -155,13 +162,12 @@ int getEff(void)
   
   TLegend *legpt = new TLegend(0.5,0.15,0.9,0.35);
   SetLegendStyle(legpt);
-  legpt->AddEntry(ptSimRecResAll[0],"|#eta|<0.8","lp");
+  legpt->AddEntry(ptSimRecResAll[0],Form("|#eta|<%.1f",rapArrRes[0]),"lp");
   for (int irap=1; irap<nintRapArrRes; irap++) {
     SetHistStyle(ptSimRecResAll[irap],irap,irap,1E-3,0.6);
     ptSimRecResAll[irap]->Draw("p same");
+    legpt->AddEntry(ptSimRecResAll[irap],Form("%.1f<|#eta|<%.1f",rapArrRes[irap],rapArrRes[irap+1]),"lp");
   }
-  legpt->AddEntry(ptSimRecResAll[1],"0.8<|#eta|<1.6","lp");
-  legpt->AddEntry(ptSimRecResAll[2],"1.6<|#eta|<2.4","lp");
   legpt->Draw("same");
   ctmp->SaveAs("./ptSimRecResFitResults.pdf");
   ctmp->SaveAs("./ptSimRecResFitResults.png");
@@ -256,19 +262,19 @@ int getEff(void)
   // Get numerator and denominator histos for efficiency
   root_dir->GetObject("num_assoc(simToReco)_pT",num_assoc_simToReco_pT[0]);
   root_dir->GetObject("num_simul_pT",num_simul_pT[0]);
-  for (int irap=0; irap<nintRapArr; irap++) {
-    for (int ipt=0; ipt<nintPtArrRes; ipt++) {
-      int idx = nintPtArrRes*irap + ipt+1;
+  for (int irap=0; irap<nbins_eta; irap++) {
+    for (int ipt=0; ipt<nbins_pT; ipt++) {
+      int idx = nbins_pT*irap + ipt+1;
       cout << "eff of pT: " << idx << " " << irap << " " << ipt+1 << endl;
-      root_dir->GetObject(Form("num_assoc(simToReco)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[irap]*10,rapArr[irap+1]*10,ptArrRes[ipt]*10,ptArrRes[ipt+1]*10),num_assoc_simToReco_pT[idx]);
-      root_dir->GetObject(Form("num_simul_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[irap]*10,rapArr[irap+1]*10,ptArrRes[ipt]*10,ptArrRes[ipt+1]*10),num_simul_pT[idx]);
+      root_dir->GetObject(Form("num_assoc(simToReco)_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",bins_eta[irap]*10,bins_eta[irap+1]*10,bins_pT[ipt]*10,bins_pT[ipt+1]*10),num_assoc_simToReco_pT[idx]);
+      root_dir->GetObject(Form("num_simul_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",bins_eta[irap]*10,bins_eta[irap+1]*10,bins_pT[ipt]*10,bins_pT[ipt+1]*10),num_simul_pT[idx]);
     }
     // In a same rap region, all pT denominator and numerator histos will be merged to have 1 complete pT x-axis
     // Hence ipt should start from 1 to avoid double adding of [0] histo
-    for (int ipt=1; ipt<nintPtArrRes; ipt++) {
-      int idx = nintPtArrRes*irap + ipt+1;
+    for (int ipt=1; ipt<nbins_pT; ipt++) {
+      int idx = nbins_pT*irap + ipt+1;
       // Because the first histo(0-3 pT bin) will have all other bin's content, ipt==0
-      int idx2 = nintPtArrRes*irap + 0+1;
+      int idx2 = nbins_pT*irap + 0+1;
       cout << "merging pT histos: " << idx << " " << idx2 << " " << irap << " " << ipt+1 << endl;
       num_assoc_simToReco_pT[idx2]->Add(num_assoc_simToReco_pT[idx]);
       num_simul_pT[idx2]->Add(num_simul_pT[idx]);
@@ -276,85 +282,63 @@ int getEff(void)
   }
   root_dir->GetObject("num_assoc(simToReco)_cent",num_assoc_simToReco_cent[0]);
   root_dir->GetObject("num_simul_cent",num_simul_cent[0]);
-  for (int irap=0; irap<nintRapArr; irap++) {
-    for (int ipt=0; ipt<nintPtArrRes; ipt++) {
-      int idx = nintPtArrRes*irap + ipt+1;
-      root_dir->GetObject(Form("num_assoc(simToReco)_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[irap]*10,rapArr[irap+1]*10,ptArrRes[ipt]*10,ptArrRes[ipt+1]*10),num_assoc_simToReco_cent[idx]);
-      root_dir->GetObject(Form("num_simul_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[irap]*10,rapArr[irap+1]*10,ptArrRes[ipt]*10,ptArrRes[ipt+1]*10),num_simul_cent[idx]);
+  for (int irap=0; irap<nbins_eta; irap++) {
+    for (int ipt=0; ipt<nbins_pT; ipt++) {
+      int idx = nbins_pT*irap + ipt+1;
+      root_dir->GetObject(Form("num_assoc(simToReco)_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",bins_eta[irap]*10,bins_eta[irap+1]*10,bins_pT[ipt]*10,bins_pT[ipt+1]*10),num_assoc_simToReco_cent[idx]);
+      root_dir->GetObject(Form("num_simul_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",bins_eta[irap]*10,bins_eta[irap+1]*10,bins_pT[ipt]*10,bins_pT[ipt+1]*10),num_simul_cent[idx]);
     }
   }
-  root_dir->GetObject("num_assoc(simToReco)_eta",num_assoc_simToReco_eta);
-  root_dir->GetObject("num_simul_eta",num_simul_eta);
-  root_dir->GetObject("simulation/etaSIM",etaSIM);
-  root_dir->GetObject("simulation/ptSIM",pTSIM);
-
-  // Check binnng in numerator and denominator histos for efficiency
-  if (num_assoc_simToReco_eta->GetNbinsX() != num_simul_eta->GetNbinsX()) {
-    cout << "num_assoc_simToReco_eta and num_simul_eta have different number of bins in X-axis" << endl;
-  }
-  if (num_assoc_simToReco_pT[0]->GetNbinsX() != num_simul_pT[0]->GetNbinsX()) {
-    cout << "num_assoc_simToReco_pT and num_simul_pT have different number of bins in X-axis" << endl;
-  }
-  if (num_assoc_simToReco_cent[0]->GetNbinsX() != num_simul_cent[0]->GetNbinsX()) {
-    cout << "num_assoc_simToReco_cent and num_simul_cent have different number of bins in X-axis" << endl;
-  }
-
-  const int nbins_eta = num_assoc_simToReco_eta->GetNbinsX();
-  const int nbins_pT = num_assoc_simToReco_pT[0]->GetNbinsX();
-  const int nbins_cent = num_assoc_simToReco_cent[0]->GetNbinsX();
-  double *bins_eta = new double[nbins_eta+1];
-  double *bins_pT = new double[nbins_pT+1];
-  double *bins_cent = new double[nbins_cent+1];
-  cout << "nbins_eta: " << nbins_eta << " nbins_pT: " << nbins_pT << " nbins_cent: " << nbins_cent << endl;
-  cout << "bins_eta: " <<endl;
-  for (int i=0; i<=nbins_eta; i++) {
-    bins_eta[i] = num_assoc_simToReco_eta->GetXaxis()->GetBinUpEdge(i);
-    cout << bins_eta[i] << "\t";
-  }
-  cout << endl << "bins_pT: " << endl;
-  for (int i=0; i<=nbins_pT; i++) {
-    bins_pT[i] = num_assoc_simToReco_pT[0]->GetXaxis()->GetBinUpEdge(i);
-    cout << num_simul_pT[0]->GetXaxis()->GetBinUpEdge(i) << "\t";
-    cout << bins_pT[i] << "\t";
-  }
-  cout << endl << "bins_cent: " << endl;
-  for (int i=0; i<=nbins_cent; i++) {
-    bins_cent[i] = num_assoc_simToReco_cent[0]->GetXaxis()->GetBinUpEdge(i);
-    cout << num_simul_cent[0]->GetXaxis()->GetBinUpEdge(i) << "\t";
-    cout << bins_cent[i] << "\t";
-  }
-  cout << endl;
 
   // Create Efficiency plots
-  TH1F *eff_simToReco_eta = new TH1F("eff_simToReco_eta",";#eta;Efficiency",nbins_eta,bins_eta);
-  TH1F *eff_simToReco_pT[50];
-  TH1F *eff_simToReco_cent[50];
+  TGraphAsymmErrors *eff_simToReco_eta = new TGraphAsymmErrors();
+  TGraphAsymmErrors *eff_simToReco_pT[50];
+  TGraphAsymmErrors *eff_simToReco_cent[50];
 
-  eff_simToReco_pT[0] = new TH1F("eff_simToReco_pT",";p_{T} (GeV/c);Efficiency",nbins_pT,bins_pT);
-  eff_simToReco_cent[0] = new TH1F("eff_simToReco_cent",";Centrality;Efficiency",nbins_cent,bins_cent);
-  for (int irap=0; irap<nintRapArr; irap++) {
-    for (int ipt=0; ipt<nintPtArrRes; ipt++) {
-      int idx = nintPtArrRes*irap + ipt+1;
-      eff_simToReco_pT[idx] = new TH1F(Form("eff_simToReco_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[irap]*10,rapArr[irap+1]*10,ptArrRes[ipt]*10,ptArrRes[ipt+1]*10),";p_{T} (GeV/c);Efficiency",nbins_pT,bins_pT);
-      eff_simToReco_cent[idx] = new TH1F(Form("eff_simToReco_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",rapArr[irap]*10,rapArr[irap+1]*10,ptArrRes[ipt]*10,ptArrRes[ipt+1]*10),";Centrality;Efficiency",nbins_cent,bins_cent);
+  eff_simToReco_pT[0] = new TGraphAsymmErrors();
+  eff_simToReco_cent[0] = new TGraphAsymmErrors();
+  
+  eff_simToReco_eta->SetName("eff_simToReco_eta");
+  eff_simToReco_pT[0]->SetName("eff_simToReco_pT");
+  eff_simToReco_cent[0]->SetName("eff_simToReco_cent");
+
+  for (int irap=0; irap<nbins_eta; irap++) {
+    for (int ipt=0; ipt<nbins_pT; ipt++) {
+      int idx = nbins_pT*irap + ipt+1;
+      eff_simToReco_pT[idx] = new TGraphAsymmErrors();
+      eff_simToReco_pT[idx]->SetName(Form("eff_simToReco_pT_Rap%.0f-%.0f_Pt%.0f-%.0f",bins_eta[irap]*10,bins_eta[irap+1]*10,bins_pT[ipt]*10,bins_pT[ipt+1]*10)); 
+      eff_simToReco_cent[idx] = new TGraphAsymmErrors();
+      eff_simToReco_cent[idx]->SetName(Form("eff_simToReco_cent_Rap%.0f-%.0f_Pt%.0f-%.0f",bins_eta[irap]*10,bins_eta[irap+1]*10,bins_pT[ipt]*10,bins_pT[ipt+1]*10));
     }
   }
+  // Check if objects are created correctly
   cout << eff_simToReco_pT[0]->GetName() << endl;
   cout << eff_simToReco_pT[1]->GetName() << endl;
 
-  // rap, pT and cent efficiency plots, integrated
-  getCorrectedEffErr(nbins_pT, num_assoc_simToReco_pT[0], num_simul_pT[0], eff_simToReco_pT[0]);
-  getCorrectedEffErr(nbins_cent, num_assoc_simToReco_cent[0], num_simul_cent[0], eff_simToReco_cent[0]);
-  getCorrectedEffErr(nbins_eta, num_assoc_simToReco_eta, num_simul_eta, eff_simToReco_eta);
+  // Create rap, pT and cent efficiency plots, integrated
+  eff_simToReco_pT[0]->Divide(num_assoc_simToReco_pT[0], num_simul_pT[0]);
+  eff_simToReco_cent[0]->Divide(num_assoc_simToReco_cent[0], num_simul_cent[0]);
+  eff_simToReco_eta->Divide(num_assoc_simToReco_eta, num_simul_eta);
+
+  eff_simToReco_eta->GetXaxis()->SetTitle("#eta");
+  eff_simToReco_eta->GetYaxis()->SetTitle("Efficiency");
+  eff_simToReco_pT[0]->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+  eff_simToReco_pT[0]->GetYaxis()->SetTitle("Efficiency");
+  eff_simToReco_cent[0]->GetXaxis()->SetTitle("Centrality");
+  eff_simToReco_cent[0]->GetYaxis()->SetTitle("Efficiency");
 
   // Get pT and cent efficiency plots, differential
-  for (int irap=0; irap<nintRapArr; irap++) {
-    for (int ipt=0; ipt<nintPtArrRes; ipt++) {
-      int idx = nintPtArrRes*irap + ipt+1;
+  for (int irap=0; irap<nbins_eta; irap++) {
+    for (int ipt=0; ipt<nbins_pT; ipt++) {
+      int idx = nbins_pT*irap + ipt+1;
       cout << "pT:" << nbins_pT << " " << num_assoc_simToReco_pT[idx] << " " << num_simul_pT[idx] << " " << eff_simToReco_pT[idx] << endl;
       cout << "cent:" << nbins_cent << " " << num_assoc_simToReco_cent[idx] << " " << num_simul_cent[idx] << " " << eff_simToReco_cent[idx] << endl;
-      getCorrectedEffErr(nbins_pT, num_assoc_simToReco_pT[idx], num_simul_pT[idx], eff_simToReco_pT[idx]);
-      getCorrectedEffErr(nbins_cent, num_assoc_simToReco_cent[idx], num_simul_cent[idx], eff_simToReco_cent[idx]);
+      eff_simToReco_pT[idx]->Divide(num_assoc_simToReco_pT[idx], num_simul_pT[idx]);
+      eff_simToReco_pT[idx]->GetXaxis()->SetTitle("p_{T} (GeV/c)");
+      eff_simToReco_pT[idx]->GetYaxis()->SetTitle("Efficiency");
+      eff_simToReco_cent[idx]->Divide(num_assoc_simToReco_cent[idx], num_simul_cent[idx]);
+      eff_simToReco_cent[idx]->GetXaxis()->SetTitle("Centrality");
+      eff_simToReco_cent[idx]->GetYaxis()->SetTitle("Efficiency");
     }
   }
 
@@ -394,17 +378,17 @@ int getEff(void)
   eff_simToReco_eta->GetXaxis()->SetRangeUser(0,2.5);
   eff_simToReco_eta->GetYaxis()->SetRangeUser(0,1.2);
   SetHistStyleDefault(eff_simToReco_eta,0,0);
-  eff_simToReco_eta->Draw("p");
+  eff_simToReco_eta->Draw("ap");
   canv->SaveAs("./eff_simToReco_eta.png");
   canv->SaveAs("./eff_simToReco_eta.pdf");
   SetHistStyleDefault(eff_simToReco_pT[0],0,0);
   eff_simToReco_pT[0]->GetYaxis()->SetRangeUser(0,1.2);
-  eff_simToReco_pT[0]->Draw("p");
+  eff_simToReco_pT[0]->Draw("ap");
   canv->SaveAs(Form("./%s.png",eff_simToReco_pT[0]->GetName()));
   canv->SaveAs(Form("./%s.pdf",eff_simToReco_pT[0]->GetName()));
   SetHistStyleDefault(eff_simToReco_cent[0],0,0);
   eff_simToReco_cent[0]->GetYaxis()->SetRangeUser(0,1.2);
-  eff_simToReco_cent[0]->Draw("p");
+  eff_simToReco_cent[0]->Draw("ap");
   canv->SaveAs(Form("./%s.png",eff_simToReco_cent[0]->GetName()));
   canv->SaveAs(Form("./%s.pdf",eff_simToReco_cent[0]->GetName()));
 
@@ -413,27 +397,27 @@ int getEff(void)
   TCanvas *canv3 = new TCanvas("canv3","canv3",600,600);
   legpt = new TLegend(0.5,0.22,0.9,0.42);
   SetLegendStyle(legpt);
-  for (int irap=0; irap<nintRapArrRes; irap++) {
+  for (int irap=0; irap<nbins_eta; irap++) {
     TCanvas *canv2 = new TCanvas("canv2","canv2",600,600);
     TLegend *legcent = new TLegend(0.5,0.65,0.93,0.95);
 //    TLegend *legcent = new TLegend(0.53,0.15,0.93,0.42);
     SetLegendStyle(legcent);
     legcent->SetNColumns(2);
-    legcent->SetHeader(Form("%.1f<|#eta|<%.1f",rapArr[irap],rapArr[irap+1]));
-    for (int ipt=0; ipt<nintPtArrRes; ipt++) {
-      int idx = nintPtArrRes*irap + ipt+1;
+    legcent->SetHeader(Form("%.1f<|#eta|<%.1f",bins_eta[irap],bins_eta[irap+1]));
+    for (int ipt=0; ipt<nbins_pT; ipt++) {
+      int idx = nbins_pT*irap + ipt+1;
       
       canv->cd();
       SetHistStyleDefault(eff_simToReco_pT[idx],irap,irap);
       eff_simToReco_pT[idx]->GetYaxis()->SetRangeUser(0,1.2);
-      eff_simToReco_pT[idx]->Draw("p");
+      eff_simToReco_pT[idx]->Draw("ap");
       // Because the first histo(0-3 pT bin) will have all other bin's content, ipt==0
-      int idx2 = nintPtArrRes*irap + 0+1;
+      int idx2 = nbins_pT*irap + 0+1;
       if (idx!=idx2) {
-        lat->DrawLatex(0.15,0.9,Form("%.1f<|#eta|<%.1f, %.1f-%.1f GeV/c",rapArr[irap],rapArr[irap+1],ptArrRes[ipt],ptArrRes[ipt+1]));
+        lat->DrawLatex(0.15,0.9,Form("%.1f<|#eta|<%.1f, %.1f-%.1f GeV/c",bins_eta[irap],bins_eta[irap+1],bins_pT[ipt],bins_pT[ipt+1]));
       } else {
         // This is merged pT case!
-        lat->DrawLatex(0.15,0.9,Form("%.1f<|#eta|<%.1f, %.1f-%.1f GeV/c",rapArr[irap],rapArr[irap+1],ptArrRes[0],ptArrRes[nintPtArrRes]));
+        lat->DrawLatex(0.15,0.9,Form("%.1f<|#eta|<%.1f, %.1f-%.1f GeV/c",bins_eta[irap],bins_eta[irap+1],bins_pT[0],bins_pT[nbins_pT]));
       }
       canv->SaveAs(Form("./%s.png",eff_simToReco_pT[idx]->GetName()));
       canv->SaveAs(Form("./%s.pdf",eff_simToReco_pT[idx]->GetName()));
@@ -442,13 +426,13 @@ int getEff(void)
       SetHistStyleDefault(eff_simToReco_cent[idx],ipt,ipt);
       eff_simToReco_cent[idx]->GetYaxis()->SetRangeUser(0,1.2);
       if (ipt==0) {
-        eff_simToReco_cent[idx]->Draw("p");
+        eff_simToReco_cent[idx]->Draw("ap");
       } else {
         eff_simToReco_cent[idx]->Draw("p same");
       }
-      legcent->AddEntry(eff_simToReco_cent[idx],Form("%.1f-%.1f GeV/c",ptArrRes[ipt],ptArrRes[ipt+1]),"pl");
+      legcent->AddEntry(eff_simToReco_cent[idx],Form("%.1f-%.1f GeV/c",bins_pT[ipt],bins_pT[ipt+1]),"pl");
     }
-    int idx3 = nintPtArrRes*irap + 0+1;
+    int idx3 = nbins_pT*irap + 0+1;
     canv2->cd();
     legcent->Draw("same");
     canv2->SaveAs(Form("./%s.png",eff_simToReco_cent[idx3]->GetName()));
@@ -458,11 +442,11 @@ int getEff(void)
 
     canv3->cd();
     if (irap==0) {
-      eff_simToReco_pT[idx3]->Draw("p");
-      legpt->AddEntry(eff_simToReco_pT[idx3],Form("%.1f<|#eta|<%.1f",rapArr[irap],rapArr[irap+1]),"pl");
+      eff_simToReco_pT[idx3]->Draw("ap");
+      legpt->AddEntry(eff_simToReco_pT[idx3],Form("%.1f<|#eta|<%.1f",bins_eta[irap],bins_eta[irap+1]),"pl");
     } else if (irap!=0) {
       eff_simToReco_pT[idx3]->Draw("p same");
-      legpt->AddEntry(eff_simToReco_pT[idx3],Form("%.1f<|#eta|<%.1f",rapArr[irap],rapArr[irap+1]),"pl");
+      legpt->AddEntry(eff_simToReco_pT[idx3],Form("%.1f<|#eta|<%.1f",bins_eta[irap],bins_eta[irap+1]),"pl");
     }
   }
   legpt->Draw("same");

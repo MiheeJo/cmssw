@@ -5,7 +5,6 @@ _isPbPb = False
 sampleweight = 1 # 1 for pp, numbers vary for pbpb.
 
 '''
-# PbPb sample need pT weighting numbers but below numbers are just bogus.. should be updated later
 pT03 = 8.50977e-6;
 pT36 = 7.69819e-6;
 pT69 = 1.24059e-6;
@@ -34,7 +33,7 @@ process.source = cms.Source("PoolSource",
     secondaryFileNames = cms.untracked.vstring(),
     fileNames =
     cms.untracked.vstring(
-      "file:/afs/cern.ch/work/m/miheejo/private/cmssw758patch4/src/reco/Pythia8_JpsiMM_pp/HIN-HINppWinter16DR-00111.root",
+      "file:./HIN-HINppWinter16DR-00111_99.root",
 #      "file:/afs/cern.ch/work/m/miheejo/private/cmssw758patch4/src/reco/Pythia8_JpsiMM_ptJpsi_00_03_Hydjet_MB/HIN-HINPbPbWinter16DR-00028_reco.root"
       )
 )
@@ -93,16 +92,11 @@ process.staUpdMuonTrackVMuonAssoc.centralityRanges = cms.vdouble(0,5,10,15,20,30
 process.staUpdMuonTrackVMuonAssoc.nint = cms.int32(25)
 process.staUpdMuonTrackVMuonAssoc.min = cms.double(0)
 process.staUpdMuonTrackVMuonAssoc.useFabsEta = cms.bool(True)
-process.staUpdMuonTrackVMuonAssoc.rapArr = cms.vdouble(0, 0.8, 1.6, 2.4)
-process.staUpdMuonTrackVMuonAssoc.rapArrRes = cms.vdouble(0, 0.8, 1.6, 2.4)
-process.staUpdMuonTrackVMuonAssoc.ptArrRes = cms.vdouble(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20)
-#### if pTRanges is defined, nintpT, minpT and maxpT will not be used
-process.staUpdMuonTrackVMuonAssoc.minpT = cms.double(0)
-process.staUpdMuonTrackVMuonAssoc.maxpT = cms.double(20)
-process.staUpdMuonTrackVMuonAssoc.nintpT = cms.int32(200)
-#### if pTRanges is defined, nintpT, minpT and maxpT will not be used
-process.staUpdMuonTrackVMuonAssoc.pTRanges = cms.vdouble(0,1.5,3,4.5,6,7.5,9,10,12,14,20);
+process.staUpdMuonTrackVMuonAssoc.rapArr = cms.vdouble(0, 1.2, 2.1, 2.4)
+process.staUpdMuonTrackVMuonAssoc.rapArrRes = cms.vdouble(0, 1.2, 2.1, 2.4)
 process.staUpdMuonTrackVMuonAssoc.pTWeight = cms.double(sampleweight);
+process.staUpdMuonTrackVMuonAssoc.ptArr = cms.vdouble(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20)
+process.staUpdMuonTrackVMuonAssoc.ptArrRes = cms.vdouble(0, 1.5, 3, 4.5, 6, 7.5, 9, 10, 12, 14, 20)
 
 process.prevalidation_ = cms.Sequence(process.cutsRecoTracks+process.cutsRecoTrkMuons+process.cutsTpMuons+process.tpToStaUpdMuonAssociation);
 process.validation_ = cms.Sequence(process.staUpdMuonTrackVMuonAssoc);
