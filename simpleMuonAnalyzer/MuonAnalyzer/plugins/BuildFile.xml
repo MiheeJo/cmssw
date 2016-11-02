@@ -1,0 +1,15 @@
+<use name="CommonTools/UtilAlgos"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/PluginManager"/>
+<use name="FWCore/ParameterSet"/>
+<use name="root"/>
+<use name="rootmath"/>
+<use name="rootcore"/>
+<use name="roofit"/>
+<use name="hepmc"/>
+<use name="DataFormats/HeavyIonEvent"/>
+<use name="DataFormats/HepMCCandidate"/>
+<use name="DataFormats/MuonReco"/>
+<use name="DataFormats/VertexReco"/>
+<use name="DataFormats/TrackReco"/>
+<flags EDM_PLUGIN="1"/>
