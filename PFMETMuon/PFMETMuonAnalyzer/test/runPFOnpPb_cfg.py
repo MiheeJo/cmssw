@@ -10,7 +10,6 @@ _doMC = False;
 _isHI = False;
 _isPA = True;
 _doJets = False;
-_onlyHighPtMuPathTriggered = False;
 
 options = VarParsing.VarParsing('analysis')
 options.outputFile = "WwithPF.root"
@@ -42,7 +41,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 #process.Timing = cms.Service("Timing")
 
 ### Common offline event selection
-process.load("HeavyIonsAnalysis.Configuration.collisionEventSelection_cff")
+process.load("HeavyIonsAnalysis.Configuration.2013collisionEventSelection_cff")
 
 ### pile up rejection
 
@@ -61,8 +60,6 @@ if _doMC:
   process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc_PIon', '')
 else:
   process.GlobalTag = GlobalTag(process.GlobalTag, '80X_dataRun2_Prompt_v15', '')
-process.GlobalTag.snapshotTime = cms.string("9999-12-31 23:59:59.000")
-if not _doMC:
   process.GlobalTag.toGet = cms.VPSet(
       cms.PSet(
         record = cms.string("HeavyIonRcd"),
@@ -85,6 +82,7 @@ if not _doMC:
         cms.string('frontier://FrontierProd/CMS_CONDITIONS')
         )
       )
+process.GlobalTag.snapshotTime = cms.string("9999-12-31 23:59:59.000")
 
 ### HLT muon path selection
 import HLTrigger.HLTfilters.hltHighLevel_cfi
@@ -114,14 +112,15 @@ else:
 ###
 
 process.patMuons = cms.Sequence(
-#    process.PAcollisionEventSelection *
+    process.PAcollisionEventSelection *
 #    process.pileupVertexFilterCutGplus * 
 #    process.pACentrality_step *
     process.patMuonSequence
     )
 
 if _doMC:
-    process.patMuons.remove(process.hltOniaHI)
+  process.patMuons.remove(process.hltOniaHI)
+
 
 ### PAT muon selection
 process.goodPatMuons = cms.EDFilter("PATMuonSelector",
@@ -147,17 +146,8 @@ process.pfcandAnalyzer.isPA = cms.untracked.bool(_isPA)
 process.pfcandAnalyzer.doJets = cms.untracked.bool(_doJets)
 
 
-process.hltSglMu = cms.EDFilter("HLTHighLevel",
-                 TriggerResultsTag = cms.InputTag("TriggerResults","","HLT"),
-                 HLTPaths = cms.vstring("HLT_PAL3Mu12_v*","HLT_PAL2Mu12_v*"),
-                 eventSetupPathsKey = cms.string(''),
-                 andOr = cms.bool(True),
-                 throw = cms.bool(False)
-)
-
 process.ntuples = cms.Path(
     process.patMuons*
-    process.hltSglMu *
     process.goodPatMuons*
     process.pfcandAnalyzer
     #process.ak5PFJetAnalyzer*
@@ -165,8 +155,5 @@ process.ntuples = cms.Path(
     #process.pftowerAna
     #process.anaMET
     )
-
-if not _onlyHighPtMuPathTriggered:
-    process.ntuples.remove(process.hltSglMu)
 
 process.schedule = cms.Schedule(process.ntuples)

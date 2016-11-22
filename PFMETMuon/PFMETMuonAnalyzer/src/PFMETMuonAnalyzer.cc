@@ -410,6 +410,7 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     if (iTrack.isNonnull()) {
       pfEvt_.muSelectionType_.push_back( muonIDmask(muon) );
       pfEvt_.muHighPurity_.push_back( iTrack->quality(reco::TrackBase::highPurity) );
+      pfEvt_.muIsTightMuon_.push_back( muon::isTightMuon(muon, *privtx) );
       pfEvt_.muIsGoodMuon_.push_back( muon::isGoodMuon(muon, muon::TMOneStationTight) );
       pfEvt_.muTrkMuArb_.push_back( muon.muonID("TrackerMuonArbitrated") );
       pfEvt_.muTMOneStaTight_.push_back( muon.muonID("TMOneStationTight") );
@@ -650,6 +651,9 @@ void TreePFCandEventData::SetBranches(int etaBins, int fourierOrder, bool doUEra
   tree_->Branch("muPx",&(this->muPx_));
   tree_->Branch("muPy",&(this->muPy_));
   tree_->Branch("muPz",&(this->muPz_));
+  tree_->Branch("muPt",&(this->muPt_));
+  tree_->Branch("muEta",&(this->muEta_));
+  tree_->Branch("muPhi",&(this->muPhi_));
   tree_->Branch("muCharge",&(this->muCharge_));
   tree_->Branch("muSelectionType",&(this->muSelectionType_));
   tree_->Branch("muTrackIso",&(this->muTrackIso_));
@@ -657,6 +661,7 @@ void TreePFCandEventData::SetBranches(int etaBins, int fourierOrder, bool doUEra
   tree_->Branch("muEcalIso",&(this->muEcalIso_));
   tree_->Branch("muHcalIso",&(this->muHcalIso_));
   tree_->Branch("muHighPurity",&(this->muHighPurity_));
+  tree_->Branch("muIsTightMuon",&(this->muIsTightMuon_));
   tree_->Branch("muIsGoodMuon",&(this->muIsGoodMuon_));
   tree_->Branch("muTrkMuArb",&(this->muTrkMuArb_));
   tree_->Branch("muTMOneStaTight",&(this->muTMOneStaTight_));
@@ -760,6 +765,7 @@ void TreePFCandEventData::Clear()
   
   muSelectionType_.clear();
   muHighPurity_.clear();
+  muIsTightMuon_.clear();
   muIsGoodMuon_.clear();
   muTrkMuArb_.clear();
   muTMOneStaTight_.clear();

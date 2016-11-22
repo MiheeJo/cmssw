@@ -154,7 +154,10 @@ public:
   // -- generalTracks info --
   Int_t                        nTRACKpart_;
   std::vector<Int_t>           traQual_, traCharge_;
-  std::vector<Float_t>         traPt_,   traEta_,  traPhi_, traAlgo_,  traHits_;
+  std::vector<Float_t>         traPt_,   traEta_,  traPhi_;
+  std::vector<Int_t>           traAlgo_,  traHits_;
+  // track algorithm enum:
+  // https://cmssdt.cern.ch/SDT/doxygen/CMSSW_8_0_24/doc/html/da/d0c/TrackBase_8h_source.html#l00099
 
   // -- MET info --
   Float_t                      recoPfMET_, recoPfMETPhi_, recoPfMETsumEt_;
@@ -166,7 +169,7 @@ public:
   std::vector<Float_t>         muPt_, muEta_, muPhi_;
   std::vector<Int_t>           muCharge_, mu_SelectionType_;
   std::vector<Float_t>         muTrackIso_, muCaloIso_, muEcalIso_, muHcalIso_;
-  std::vector<bool>            muHighPurity_, muIsGoodMuon_, muTrkMuArb_, muTMOneStaTight_;
+  std::vector<bool>            muHighPurity_, muIsTightMuon_, muIsGoodMuon_, muTrkMuArb_, muTMOneStaTight_;
   std::vector<Int_t>           muSelectionType_, muNTrkHits_, muNPixValHits_, muNPixWMea_, muNTrkWMea_, muStationsMatched_, muNMuValHits_;
   std::vector<Float_t>         muDxy_, muDxyErr_, muDz_, muDzErr_;
   std::vector<Float_t>         muPtInner_, muPtErrInner_, muPtGlobal_, muPtErrGlobal_;
