@@ -22,6 +22,7 @@
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
+#include "DataFormats/GeometryVector/interface/VectorUtil.h"
 
 #include "DataFormats/HeavyIonEvent/interface/Centrality.h"
 #include "DataFormats/HeavyIonEvent/interface/CentralityBins.h"
@@ -83,11 +84,12 @@ int muonIDmask(const pat::Muon& muon)
    int mask = 0;
    int type;
    for (type=muon::All; type<=muon::RPCMuLoose; type++)
-      if (muon::isGoodMuon(muon,(muon::SelectionType) type))
+      if (muon::isGoodMuon(muon,(muon::SelectionType) type)) {
          mask = mask | (int) pow(2, type);
-
+      }
    return mask;
 }
+
 //----------------------------------------------------------------
 //
 // DiJet ana Event Data Tree definition
@@ -103,9 +105,6 @@ public:
   void Clear();
   bool doJets;
   bool doMC;
-  int muonIDmask(const pat::Muon* muon);
-
-  Float_t         jdphi_;
 
   unsigned int runNb;
   unsigned int eventNb;
@@ -127,62 +126,70 @@ public:
   Float_t         RefVtx_xError, RefVtx_yError, RefVtx_zError;
 
   // -- particle info & GEN info --
-  Int_t                        nPFpart_, nGENpart_, njets_;
-  std::vector<Int_t>           pfId_, genPDGId_;
-  std::vector<Float_t>         pfEnergy_, jetEnergy_;
-  std::vector<Float_t>         pfPt_, genPt_,  jetPt_;
-  std::vector<Float_t>         pfEta_, genEta_,  jetEta_;
-  std::vector<Float_t>         pfPhi_, genPhi_,  jetPhi_;
-  std::vector<Float_t>         jetMass_, jetPU_;
-  std::vector<Int_t>           jetMatchIndex_, pfCharge_;
-  std::vector<Float_t>         pfTheta_, pfEt_;
-  std::vector<Float_t>         pfVsPt_, pfVsPtInitial_, pfArea_;
+  Int_t                        nPFpart, nGENpart, njets;
+  std::vector<Int_t>           pfId, genPDGId;
+  std::vector<Float_t>         pfEnergy, jetEnergy;
+  std::vector<Float_t>         pfPt, genPt,  jetPt;
+  std::vector<Float_t>         pfEta, genEta,  jetEta;
+  std::vector<Float_t>         pfPhi, genPhi,  jetPhi;
+  std::vector<Float_t>         jetMass, jetPU;
+  std::vector<Int_t>           jetMatchIndex, pfCharge;
+  std::vector<Float_t>         pfTheta, pfEt;
+  std::vector<Float_t>         pfVsPt, pfVsPtInitial, pfArea;
   Float_t                      vn[200];
   Float_t                      psin[200];
   Float_t                      sumpt[20];
   Float_t                      ueraw[1200];
   // (particle flow charged hadrons and muons)
-  std::vector<Float_t>         pfMuonPx_, pfMuonPy_, pfMuonPz_;
-  std::vector<bool>            pfTrackerMuon_;
-  std::vector<Float_t>         pfTrackerMuonPt_;
-  std::vector<Int_t>           pfTrackHits_;
-  std::vector<Float_t>         pfDxy_, pfDz_, pfChi2_;
-  std::vector<Float_t>         pfGlobalMuonPt_;
-  std::vector<Float_t>         pfChargedPx_, pfChargedPy_, pfChargedPz_;
-  std::vector<Float_t>         pfChargedTrackRefPt_;
+  std::vector<Float_t>         pfMuonPx, pfMuonPy, pfMuonPz;
+  std::vector<bool>            pfTrackerMuon;
+  std::vector<Float_t>         pfTrackerMuonPt;
+  std::vector<Int_t>           pfTrackHits;
+  std::vector<Float_t>         pfDxy, pfDz, pfChi2;
+  std::vector<Float_t>         pfGlobalMuonPt;
+  std::vector<Float_t>         pfChargedPx, pfChargedPy, pfChargedPz;
+  std::vector<Float_t>         pfChargedTrackRefPt;
 
   // -- generalTracks info --
-  Int_t                        nTRACKpart_;
-  std::vector<Int_t>           traQual_, traCharge_;
-  std::vector<Float_t>         traPt_,   traEta_,  traPhi_;
-  std::vector<Int_t>           traAlgo_,  traHits_;
+  Int_t                        nTRACKpart;
+  std::vector<Int_t>           traQual, traCharge;
+  std::vector<Float_t>         traPt,   traEta,  traPhi;
+  std::vector<Int_t>           traAlgo,  traHits;
   // track algorithm enum:
   // https://cmssdt.cern.ch/SDT/doxygen/CMSSW_8_0_24/doc/html/da/d0c/TrackBase_8h_source.html#l00099
 
   // -- MET info --
-  Float_t                      recoPfMET_, recoPfMETPhi_, recoPfMETsumEt_;
-  Float_t                      recoPfMETmEtSig_, recoPfMETSig_;
+  Float_t                      recoPFMET, recoPFMETPhi, recoPFMETsumEt;
+  Float_t                      recoPFMETmEtSig, recoPFMETSig;
 
   // -- Muon info (pat::muons) --
-  Int_t                        nMUpart_;
-  std::vector<Float_t>         muPx_, muPy_, muPz_;
-  std::vector<Float_t>         muPt_, muEta_, muPhi_;
-  std::vector<Int_t>           muCharge_, mu_SelectionType_;
-  std::vector<Float_t>         muTrackIso_, muCaloIso_, muEcalIso_, muHcalIso_;
-  std::vector<bool>            muHighPurity_, muIsTightMuon_, muIsGoodMuon_, muTrkMuArb_, muTMOneStaTight_;
-  std::vector<Int_t>           muSelectionType_, muNTrkHits_, muNPixValHits_, muNPixWMea_, muNTrkWMea_, muStationsMatched_, muNMuValHits_;
-  std::vector<Float_t>         muDxy_, muDxyErr_, muDz_, muDzErr_;
-  std::vector<Float_t>         muPtInner_, muPtErrInner_, muPtGlobal_, muPtErrGlobal_;
-  std::vector<Float_t>         muNormChi2Inner_, muNormChi2Global_;
+  Int_t                        nMUpart;
+  std::vector<Float_t>         muPx, muPy, muPz;
+  std::vector<Float_t>         muMt, muPt, muEta, muPhi;
+  std::vector<Int_t>           muCharge, mu_SelectionType;
+  std::vector<Float_t>         muTrackIso, muCaloIso, muEcalIso, muHcalIso; //R0.3 default pp isolation setup
+  std::vector<Float_t>         muSumChargedHadronPt, muSumNeutralHadronEt, muSumPhotonEt, muSumPUPt, muPFBasedDBetaIso; //R0.4 (MU POG default PF-based isolation)
+  std::vector<bool>            muHighPurity, muIsTightMuon, muIsGoodMuon, muTrkMuArb, muTMOneStaTight;
+  std::vector<Int_t>           muSelectionType, muNTrkHits, muNPixValHits, muNPixWMea, muNTrkWMea, muStationsMatched, muNMuValHits;
+  std::vector<Float_t>         muDxy, muDxyErr, muDz, muDzErr;
+  std::vector<Float_t>         muPtInner, muPtErrInner, muPtGlobal, muPtErrGlobal;
+  std::vector<Float_t>         muNormChi2Inner, muNormChi2Global;
+  // PF types : 
+  // http://cmslxr.fnal.gov/source/DataFormats/ParticleFlowCandidate/interface/PFCandidate.h?v=CMSSW_8_0_24#0044
+  // Isolation code reference: https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_X/ElectroWeakAnalysis/Utilities/src/MuonWithPFIsoProducer.cc
+  std::vector<Float_t>         muIso03_sumPt, muIso04_sumPt, muIso05_sumPt, muIso03_emEt, muIso04_emEt, muIso05_emEt, muIso03_hadEt, muIso04_hadEt, muIso05_hadEt;
+  std::vector<Int_t>           muIso03_nTracks, muIso04_nTracks, muIso05_nTracks;
+  std::vector<bool>            muNotPFMuon;
 
   // -- Trigger info --
-  std::vector<ULong64_t>       muTrig_;
   ULong64_t                    HLTriggers;
-  std::vector<Int_t>           trigPrescale;
+  std::vector<Int_t>           trigPrescale; // size of this array will be same as number of trigger names
+  std::vector<ULong64_t>       muTrig;
 
 private:
   TTree*                       tree_;
 };
+
 
 class PFMETMuonAnalyzer : public edm::EDAnalyzer {
 public:
@@ -236,8 +243,9 @@ private:
   int           etaBins_;
 
   // debug
-  Int_t	  verbosity_;
+  Int_t	      verbosity_;
 
+  bool        usePfMuonsOnly_;
   bool        doJets_;
   bool        doMC_;
   bool        isHI_;

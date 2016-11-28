@@ -12,7 +12,7 @@ _isPA = True;
 _doJets = False;
 
 options = VarParsing.VarParsing('analysis')
-options.outputFile = "WwithPF.root"
+options.outputFile = "PF_MET_express.root"
 #options.inputFiles = "/store/hidata/PARun2016B/PAEGJet1/AOD/PromptReco-v1/000/285/244/00000/FCBC1BFC-9EAC-E611-AC24-02163E01356A.root"
 options.inputFiles = "/store/hidata/PARun2016B/PADoubleMuon/AOD/PromptReco-v1/000/285/244/00000/2E9A949F-A5AC-E611-9368-02163E0142A2.root"
 options.maxEvents = -1
