@@ -22,7 +22,6 @@
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/Math/interface/deltaPhi.h"
-#include "DataFormats/GeometryVector/interface/VectorUtil.h"
 
 #include "DataFormats/HeavyIonEvent/interface/Centrality.h"
 #include "DataFormats/HeavyIonEvent/interface/CentralityBins.h"
@@ -141,13 +140,14 @@ public:
   Float_t                      sumpt[20];
   Float_t                      ueraw[1200];
   // (particle flow charged hadrons and muons)
-  std::vector<Float_t>         pfMuonPx, pfMuonPy, pfMuonPz;
+  std::vector<Float_t>         pfMuonPt, pfMuonPx, pfMuonPy, pfMuonPz, pfMuonPhi, pfMuonEta, pfMuonMt;
+  std::vector<Int_t>           pfMuonCharge;
   std::vector<bool>            pfTrackerMuon;
   std::vector<Float_t>         pfTrackerMuonPt;
   std::vector<Int_t>           pfTrackHits;
   std::vector<Float_t>         pfDxy, pfDz, pfChi2;
   std::vector<Float_t>         pfGlobalMuonPt;
-  std::vector<Float_t>         pfChargedPx, pfChargedPy, pfChargedPz;
+  std::vector<Float_t>         pfChargedPt, pfChargedPx, pfChargedPy, pfChargedPz, pfChargedPhi, pfChargedEta;
   std::vector<Float_t>         pfChargedTrackRefPt;
 
   // -- generalTracks info --
@@ -177,7 +177,7 @@ public:
   // PF types : 
   // http://cmslxr.fnal.gov/source/DataFormats/ParticleFlowCandidate/interface/PFCandidate.h?v=CMSSW_8_0_24#0044
   // Isolation code reference: https://github.com/cms-sw/cmssw/blob/CMSSW_8_0_X/ElectroWeakAnalysis/Utilities/src/MuonWithPFIsoProducer.cc
-  std::vector<Float_t>         muIso03_sumPt, muIso04_sumPt, muIso05_sumPt, muIso03_emEt, muIso04_emEt, muIso05_emEt, muIso03_hadEt, muIso04_hadEt, muIso05_hadEt;
+  std::vector<Float_t>         muIso03_vetoPt, muIso03_sumPt, muIso04_sumPt, muIso05_sumPt, muIso03_emEt, muIso04_emEt, muIso05_emEt, muIso03_hadEt, muIso04_hadEt, muIso05_hadEt;
   std::vector<Int_t>           muIso03_nTracks, muIso04_nTracks, muIso05_nTracks;
   std::vector<bool>            muNotPFMuon;
 

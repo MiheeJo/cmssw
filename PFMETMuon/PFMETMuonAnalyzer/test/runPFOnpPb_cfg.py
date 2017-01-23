@@ -9,10 +9,11 @@ import FWCore.ParameterSet.VarParsing as VarParsing
 _doMC = False;
 _isHI = False;
 _isPA = True;
+_usePfMuonsOnly = True;
 _doJets = False;
 
 options = VarParsing.VarParsing('analysis')
-options.outputFile = "PF_MET_express.root"
+options.outputFile = "PF_MET_period1.root"
 #options.inputFiles = "/store/hidata/PARun2016B/PAEGJet1/AOD/PromptReco-v1/000/285/244/00000/FCBC1BFC-9EAC-E611-AC24-02163E01356A.root"
 options.inputFiles = "/store/hidata/PARun2016B/PADoubleMuon/AOD/PromptReco-v1/000/285/244/00000/2E9A949F-A5AC-E611-9368-02163E0142A2.root"
 options.maxEvents = -1
@@ -144,6 +145,7 @@ process.pfcandAnalyzer.doMC = cms.untracked.bool(_doMC)
 process.pfcandAnalyzer.isHI = cms.untracked.bool(_isHI)
 process.pfcandAnalyzer.isPA = cms.untracked.bool(_isPA)
 process.pfcandAnalyzer.doJets = cms.untracked.bool(_doJets)
+process.pfcandAnalyzer.usePfMuonsOnly = cms.untracked.bool(_usePfMuonsOnly)
 
 
 process.ntuples = cms.Path(

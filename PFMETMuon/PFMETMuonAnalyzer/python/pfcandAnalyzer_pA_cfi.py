@@ -12,7 +12,7 @@ pfcandAnalyzer = cms.EDAnalyzer('PFMETMuonAnalyzer',
                                 muonLabel = cms.InputTag("goodPatMuons"),
                                 vtxLabel = cms.InputTag("offlinePrimaryVertices"),
 
-                                pfPtMin = cms.double(0.),
+                                pfPtMin = cms.double(0.5),
                                 genPtMin = cms.double(0.5),
                                 jetPtMin = cms.double(20.0),                                
                                 etaBins = cms.int32(15),

@@ -9,13 +9,14 @@ import FWCore.ParameterSet.VarParsing as VarParsing
 _doMC = True;
 _isHI = False;
 _isPA = True;
+_usePfMuonsOnly = True;
 _doJets = False;
 
 options = VarParsing.VarParsing('analysis')
 options.outputFile = "PF_MET_mc.root"
 #options.inputFiles = "/store/hidata/PARun2016B/PADoubleMuon/AOD/PromptReco-v1/000/285/244/00000/2E9A949F-A5AC-E611-9368-02163E0142A2.root"
 options.inputFiles = "file:./cmsDriver_py_RAW2DIGI_L1Reco_RECO_1.root"
-options.maxEvents = 200
+options.maxEvents = -1
 
 options.parseArguments()
 
@@ -144,6 +145,7 @@ process.pfcandAnalyzer.doMC = cms.untracked.bool(_doMC)
 process.pfcandAnalyzer.isHI = cms.untracked.bool(_isHI)
 process.pfcandAnalyzer.isPA = cms.untracked.bool(_isPA)
 process.pfcandAnalyzer.doJets = cms.untracked.bool(_doJets)
+process.pfcandAnalyzer.usePfMuonsOnly = cms.untracked.bool(_usePfMuonsOnly)
 
 
 process.ntuples = cms.Path(

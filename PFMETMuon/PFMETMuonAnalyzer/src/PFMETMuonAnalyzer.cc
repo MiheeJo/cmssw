@@ -33,7 +33,7 @@ PFMETMuonAnalyzer::PFMETMuonAnalyzer(const edm::ParameterSet& iConfig):
   pfPtMin_ = iConfig.getParameter<double>("pfPtMin");
   genPtMin_ = iConfig.getParameter<double>("genPtMin");
   jetPtMin_ = iConfig.getParameter<double>("jetPtMin");
-  usePfMuonsOnly_ = iConfig.getUntrackedParameter<bool> ("UsePfMuonsOnly", false);
+  usePfMuonsOnly_ = iConfig.getUntrackedParameter<bool> ("usePfMuonsOnly", true);
 
   etaBins_ = iConfig.getParameter<int>("etaBins");
   fourierOrder_ = iConfig.getParameter<int>("fourierOrder");
@@ -174,6 +174,21 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   }
   pfEvt_.nPV = privtxs->size();
 
+
+  // Fill MET Object
+  Handle<reco::PFMETCollection>   recoPFMETHandle;
+  iEvent.getByToken(pfMETLabel_, recoPFMETHandle);
+  const reco::PFMET& pfmet = recoPFMETHandle->at(0);
+
+  if (recoPFMETHandle.isValid()) {
+    pfEvt_.recoPFMET = pfmet.et();
+    pfEvt_.recoPFMETPhi = pfmet.phi();
+    pfEvt_.recoPFMETsumEt  = pfmet.sumEt();
+    pfEvt_.recoPFMETmEtSig = pfmet.mEtSig();
+    pfEvt_.recoPFMETSig    = pfmet.significance();
+  } 
+
+
   // Fill PF info
   edm::Handle<reco::PFCandidateCollection> pfCandidates;
   iEvent.getByToken(pfCandidatePF_,pfCandidates);
@@ -213,7 +228,7 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
     double pt =  pfCandidate.pt();
     double energy = pfCandidate.energy();
-    if (pt<=pfPtMin_) continue;
+    if (pt<pfPtMin_) continue;
 
     int id = pfCandidate.particleId();
     if (skipCharged_ && (abs(id) == 1 || abs(id) == 3)) continue;
@@ -265,14 +280,22 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     Float_t TrackerMuon=0, TrackerMuonPt=0, GlobalMuonPt=0;
     Int_t TrackHits=0;
     Float_t Dxy=0, Dz=0, Chi2=0;
-    Float_t MuonPx=0, MuonPy=0, MuonPz=0;
-    Float_t ChargedPx=0, ChargedPy=0, ChargedPz=0, ChargedTrackRefPt=0;
+    Float_t MuonPt=0, MuonPx=0, MuonPy=0, MuonPz=0;
+    Float_t MuonPhi=0, MuonEta=0, MuonTM=0;
+    Int_t   MuonCharge=0;
+    Float_t ChargedPt=0, ChargedPx=0, ChargedPy=0,ChargedPz=0, ChargedPhi=0, ChargedEta=0, ChargedTrackRefPt=0;
 
-    if(abs(id) == 3){ // in case of muons
+    if ( id==reco::PFCandidate::mu ) {
+      MuonPt = pfCandidate.pt();
       MuonPx = pfCandidate.px();
       MuonPy = pfCandidate.py();
       MuonPz = pfCandidate.pz();
+      MuonPhi = pfCandidate.phi();
+      MuonEta = pfCandidate.eta();
+      MuonCharge = pfCandidate.charge();
 
+      MuonTM = TMath::Sqrt( 2*pfCandidate.pt()*pfEvt_.recoPFMET*(1-TMath::Cos(pfCandidate.phi()-pfEvt_.recoPFMETPhi)) );
+      
       const reco::MuonRef muonRef = pfCandidate.muonRef();  
       if ( muonRef->isTrackerMuon() ){
         reco::TrackRef trackRef = muonRef->track();
@@ -293,29 +316,39 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       }
     }
     
-    if(abs(id) == 1){
+    if ( id==reco::PFCandidate::h ) {
       ChargedPx = pfCandidate.px();
       ChargedPy = pfCandidate.py();
       ChargedPz = pfCandidate.pz();
+      ChargedPhi = pfCandidate.phi();
+      ChargedEta = pfCandidate.eta();
       const reco::TrackRef trackRef = pfCandidate.trackRef(); 
       if (trackRef.isNonnull()) {
         ChargedTrackRefPt = rndSF(trackRef->pt(),4);
       }
     }
 
+    pfEvt_.pfMuonMt.push_back( MuonTM ); 
+    pfEvt_.pfMuonPt.push_back( MuonPt );
     pfEvt_.pfMuonPx.push_back( MuonPx );
     pfEvt_.pfMuonPy.push_back( MuonPy );
     pfEvt_.pfMuonPz.push_back( MuonPz );
+    pfEvt_.pfMuonPhi.push_back( MuonPhi );
+    pfEvt_.pfMuonEta.push_back( MuonEta );
+    pfEvt_.pfMuonCharge.push_back( MuonCharge );
     pfEvt_.pfTrackerMuon.push_back( TrackerMuon );
-    pfEvt_.pfTrackerMuonPt.push_back( TrackerMuonPt );
     pfEvt_.pfTrackHits.push_back( TrackHits );
+    pfEvt_.pfTrackerMuonPt.push_back( TrackerMuonPt );
+    pfEvt_.pfGlobalMuonPt.push_back( GlobalMuonPt );
     pfEvt_.pfDxy.push_back( Dxy );
     pfEvt_.pfDz.push_back( Dz );
     pfEvt_.pfChi2.push_back( Chi2 );
-    pfEvt_.pfGlobalMuonPt.push_back( GlobalMuonPt );
+    pfEvt_.pfChargedPt.push_back( ChargedPt );
     pfEvt_.pfChargedPx.push_back( ChargedPx );
     pfEvt_.pfChargedPy.push_back( ChargedPy );
     pfEvt_.pfChargedPz.push_back( ChargedPz );
+    pfEvt_.pfChargedPhi.push_back( ChargedPhi );
+    pfEvt_.pfChargedEta.push_back( ChargedEta );
     pfEvt_.pfChargedTrackRefPt.push_back( ChargedTrackRefPt );
 
     pfEvt_.nPFpart++;
@@ -386,19 +419,6 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     pfEvt_.nTRACKpart++;
   }
 
-  // Fill MET Object
-  Handle<reco::PFMETCollection>   recoPFMETHandle;
-  iEvent.getByToken(pfMETLabel_, recoPFMETHandle);
-  const reco::PFMET& pfmet = recoPFMETHandle->at(0);
-
-  if (recoPFMETHandle.isValid()) {
-    pfEvt_.recoPFMET = pfmet.et();
-    pfEvt_.recoPFMETPhi = pfmet.phi();
-    pfEvt_.recoPFMETsumEt  = pfmet.sumEt();
-    pfEvt_.recoPFMETmEtSig = pfmet.mEtSig();
-    pfEvt_.recoPFMETSig    = pfmet.significance();
-  } 
-
 
   // Fill single muon information
   Handle<pat::MuonCollection> muonCollection; 
@@ -409,6 +429,15 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     // Inner track information of a muon
     reco::TrackRef iTrack = muon.innerTrack();
     if (iTrack.isNonnull()) {
+      // When this muon is NOT PF muon, take values from reco::muon collection
+      float muon_pt = muon.pt();
+      float muon_px = muon.px();
+      float muon_py = muon.py();
+      float muon_pz = muon.pz();
+      float muon_eta = muon.eta();
+      float muon_phi = muon.phi();
+      float muon_charge = muon.charge();
+
       muonIDmask(muon);
       pfEvt_.muSelectionType.push_back( muonIDmask(muon) );
       pfEvt_.muHighPurity.push_back( iTrack->quality(reco::TrackBase::highPurity) );
@@ -448,28 +477,6 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       pfEvt_.muPtGlobal.push_back( muPtGlobal );
       pfEvt_.muPtErrGlobal.push_back( muPtErrGlobal );
 
-      float transverseMass = TMath::Sqrt( 2*muon.pt()*pfEvt_.recoPFMET*(1-TMath::Cos(muon.phi()-pfEvt_.recoPFMETPhi)) );
-      pfEvt_.muMt.push_back( transverseMass ); 
-      pfEvt_.muPt.push_back( muon.pt() ); 
-      pfEvt_.muPx.push_back( muon.px() );
-      pfEvt_.muPy.push_back( muon.py() );
-      pfEvt_.muPz.push_back( muon.pz() );     
-      pfEvt_.muEta.push_back( muon.eta() );      
-      pfEvt_.muPhi.push_back( muon.phi() );
-      pfEvt_.muCharge.push_back( muon.charge() );
-
-      // Muon POG standard isolation cuts and variables
-      pfEvt_.muSumChargedHadronPt.push_back( muon.pfIsolationR04().sumChargedHadronPt );
-      pfEvt_.muSumNeutralHadronEt.push_back( muon.pfIsolationR04().sumNeutralHadronEt );
-      pfEvt_.muSumPhotonEt.push_back( muon.pfIsolationR04().sumPhotonEt );
-      pfEvt_.muSumPUPt.push_back( muon.pfIsolationR04().sumPUPt );
-      float PFBasedIso = (muon.pfIsolationR04().sumChargedHadronPt + max(0., muon.pfIsolationR04().sumNeutralHadronEt + muon.pfIsolationR04().sumPhotonEt - 0.5*muon.pfIsolationR04().sumPUPt))/muon.pt();
-      pfEvt_.muPFBasedDBetaIso.push_back( PFBasedIso );
-      pfEvt_.muTrackIso.push_back( muon.trackIso() );
-      pfEvt_.muCaloIso.push_back( muon.caloIso() );
-      pfEvt_.muEcalIso.push_back( muon.ecalIso() );
-      pfEvt_.muHcalIso.push_back( muon.hcalIso() );
-      
       // Muon triggers are matched to muons?
       ULong64_t muTrig=0;
       for (unsigned int iTr = 0; iTr<HLTLastFilters.size(); ++iTr) {
@@ -492,6 +499,7 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       bool muonFound = false;
 
       // Set isolations
+      float iso03_vetoPt=0;
       float iso03_sumPt=0, iso04_sumPt=0, iso05_sumPt=0;
       float iso03_emEt=0, iso04_emEt=0, iso05_emEt=0;
       float iso03_hadEt=0, iso04_hadEt=0, iso05_hadEt=0;
@@ -499,19 +507,33 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       bool muNotPFMuon = false;
       
       // Loop on all PF candidates
-      for(unsigned icand=0;icand<pfCandidateColl->size(); icand++) {
+      for (unsigned icand=0; icand<pfCandidateColl->size(); icand++) {
         const reco::PFCandidate pfCandidate = pfCandidateColl->at(icand);
+        if (pfCandidate.pt()<pfPtMin_) continue; // Don't use low pT tracks for a sum of pT in a cone 
 
         // Check the muon is in the PF collection when required
         bool thisIsTheMuon = false;
-        if (iTrack.isNonnull() && pfCandidate.trackRef()==iTrack) {
+        if ( iTrack.isNonnull() && pfCandidate.particleId()==reco::PFCandidate::mu &&
+             (pfCandidate.pt()-muon_pt)<0.0001 && (pfCandidate.eta()-muon_eta)<0.0001 &&
+             (pfCandidate.phi()-muon_phi)<0.0001 && pfCandidate.charge()==muon_charge
+           ) {
           thisIsTheMuon = true;
           muonFound = true;
+          // Take muon information when it matches with PFCandidate collection
+          if (usePfMuonsOnly_) {
+            muon_pt = pfCandidate.pt();
+            muon_px = pfCandidate.px();
+            muon_py = pfCandidate.py();
+            muon_pz = pfCandidate.pz();
+            muon_eta = pfCandidate.eta();
+            muon_phi = pfCandidate.phi();
+            muon_charge = pfCandidate.charge();
+          }
         }
 
         // Get dR. Nothing to add if dR>0.5
-        double deltaR = Geom::deltaR(muon.momentum(),pfCandidate.momentum());
-        if (deltaR>0.5) continue;
+        double deltaR = reco::deltaR(muon.eta(),muon.phi(),pfCandidate.eta(),pfCandidate.phi());
+        //if (deltaR>0.5) continue;
 
         // Fill "tracker" components
         if (   pfCandidate.particleId()==reco::PFCandidate::h
@@ -527,6 +549,8 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
                 if (deltaR<0.3) {
                   iso03_sumPt += pfCandidate.pt();
                   iso03_nTracks++;
+                } else { // Veto sumPt for cross-check
+                  iso03_vetoPt += pfCandidate.pt();
                 }
               }
         // Fill "em" components
@@ -547,6 +571,7 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       // Do not take this muon (under explicit request) if it is not a PfMuon
       if (usePfMuonsOnly_ && (!muonFound)) muNotPFMuon = true;
 
+      pfEvt_.muIso03_vetoPt.push_back( iso03_vetoPt );
       pfEvt_.muIso03_sumPt.push_back( iso03_sumPt );
       pfEvt_.muIso04_sumPt.push_back( iso04_sumPt );
       pfEvt_.muIso05_sumPt.push_back( iso05_sumPt );
@@ -560,6 +585,29 @@ PFMETMuonAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       pfEvt_.muIso04_nTracks.push_back( iso04_nTracks );
       pfEvt_.muIso05_nTracks.push_back( iso05_nTracks );
       pfEvt_.muNotPFMuon.push_back( muNotPFMuon );
+
+      // Muon POG standard isolation cuts and variables
+      pfEvt_.muSumChargedHadronPt.push_back( muon.pfIsolationR03().sumChargedHadronPt );
+      pfEvt_.muSumNeutralHadronEt.push_back( muon.pfIsolationR03().sumNeutralHadronEt );
+      pfEvt_.muSumPhotonEt.push_back( muon.pfIsolationR03().sumPhotonEt );
+      pfEvt_.muSumPUPt.push_back( muon.pfIsolationR03().sumPUPt );
+      float PFBasedIso = (muon.pfIsolationR04().sumChargedHadronPt + max(0., static_cast<double>(muon.pfIsolationR04().sumNeutralHadronEt + muon.pfIsolationR04().sumPhotonEt)))/muon_pt;
+      pfEvt_.muPFBasedDBetaIso.push_back( PFBasedIso );
+      pfEvt_.muTrackIso.push_back( muon.trackIso() );
+      pfEvt_.muCaloIso.push_back( muon.caloIso() );
+      pfEvt_.muEcalIso.push_back( muon.ecalIso() );
+      pfEvt_.muHcalIso.push_back( muon.hcalIso() );
+
+
+      float transverseMass = TMath::Sqrt( 2*muon_pt*pfEvt_.recoPFMET*(1-TMath::Cos(muon_phi-pfEvt_.recoPFMETPhi)) );
+      pfEvt_.muMt.push_back( transverseMass ); 
+      pfEvt_.muPt.push_back( muon_pt ); 
+      pfEvt_.muPx.push_back( muon_px );
+      pfEvt_.muPy.push_back( muon_py );
+      pfEvt_.muPz.push_back( muon_pz );     
+      pfEvt_.muEta.push_back( muon_eta );      
+      pfEvt_.muPhi.push_back( muon_phi );
+      pfEvt_.muCharge.push_back( muon_charge );
 
       pfEvt_.nMUpart++;
     } // end of iTrack.isNonnull
@@ -698,9 +746,14 @@ void TreePFCandEventData::SetBranches(int etaBins, int fourierOrder, bool doUEra
   }
   
   // -- particle info --
+  tree_->Branch("pfMuonMt",&(this->pfMuonMt));
+  tree_->Branch("pfMuonPt",&(this->pfMuonPt));
   tree_->Branch("pfMuonPx",&(this->pfMuonPx));
   tree_->Branch("pfMuonPy",&(this->pfMuonPy));
   tree_->Branch("pfMuonPz",&(this->pfMuonPz));
+  tree_->Branch("pfMuonPhi",&(this->pfMuonPhi));
+  tree_->Branch("pfMuonEta",&(this->pfMuonEta));
+  tree_->Branch("pfMuonCharge",&(this->pfMuonCharge));
   tree_->Branch("pfTrackerMuon",&(this->pfTrackerMuon));
   tree_->Branch("pfTrackerMuonPt",&(this->pfTrackerMuonPt));
   tree_->Branch("pfTrackHits",&(this->pfTrackHits));
@@ -708,9 +761,12 @@ void TreePFCandEventData::SetBranches(int etaBins, int fourierOrder, bool doUEra
   tree_->Branch("pfDz",&(this->pfDz));
   tree_->Branch("pfChi2",&(this->pfChi2));
   tree_->Branch("pfGlobalMuonPt",&(this->pfGlobalMuonPt));
+  tree_->Branch("pfChargedPt",&(this->pfChargedPt));
   tree_->Branch("pfChargedPx",&(this->pfChargedPx));
   tree_->Branch("pfChargedPy",&(this->pfChargedPy));
   tree_->Branch("pfChargedPz",&(this->pfChargedPz));
+  tree_->Branch("pfChargedPhi",&(this->pfChargedPhi));
+  tree_->Branch("pfChargedEta",&(this->pfChargedEta));
   tree_->Branch("pfChargedTrackRefPt",&(this->pfChargedTrackRefPt));
   
   // -- gen info --
@@ -780,6 +836,7 @@ void TreePFCandEventData::SetBranches(int etaBins, int fourierOrder, bool doUEra
   tree_->Branch("muPtErrGlobal",&(this->muPtErrGlobal));
   tree_->Branch("muNormChi2Inner",&(this->muNormChi2Inner));
   tree_->Branch("muNormChi2Global",&(this->muNormChi2Global));
+  tree_->Branch("muIso03_vetoPt",&(this->muIso03_vetoPt));
   tree_->Branch("muIso03_sumPt",&(this->muIso03_sumPt));
   tree_->Branch("muIso04_sumPt",&(this->muIso04_sumPt));
   tree_->Branch("muIso05_sumPt",&(this->muIso05_sumPt));
@@ -869,9 +926,14 @@ void TreePFCandEventData::Clear()
   }
 
   // -- particle info --
+  pfMuonPt.clear();
+  pfMuonMt.clear();
   pfMuonPx.clear();
   pfMuonPy.clear();
   pfMuonPz.clear();
+  pfMuonEta.clear();
+  pfMuonPhi.clear();
+  pfMuonCharge.clear();
   pfTrackerMuon.clear();
   pfTrackerMuonPt.clear();
   pfTrackHits.clear();
@@ -879,9 +941,12 @@ void TreePFCandEventData::Clear()
   pfDz.clear();
   pfChi2.clear();
   pfGlobalMuonPt.clear();
+  pfChargedPt.clear();
   pfChargedPx.clear();
   pfChargedPy.clear();
   pfChargedPz.clear();
+  pfChargedPhi.clear();
+  pfChargedEta.clear();
   pfChargedTrackRefPt.clear();
   
   // -- gen info --
