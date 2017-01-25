@@ -30,6 +30,15 @@ Double_t MuonTrackValidator::findNcoll(int hiBin) {
     return Ncoll[hiBin];
 };
 
+// Santona: Function for checking if muons are in acceptance
+Bool_t MuonTrackValidator::isGlobalMuonInAccept2015 (float Eta, float Pt) 
+{
+  return (fabs(Eta) < 2.4 &&
+          ((fabs(Eta) < 1.2 && Pt >= 3.5) ||
+           (1.2 <= fabs(Eta) && fabs(Eta) < 2.1 && Pt >= 5.77-1.89*fabs(Eta)) ||
+           (2.1 <= fabs(Eta) && Pt >= 1.8)));
+};
+
 void MuonTrackValidator::bookHistograms(DQMStore::IBooker& ibooker, edm::Run const&, edm::EventSetup const& setup) {
 
   int j=0;
@@ -269,6 +278,32 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
                                      << "Analyzing new event" << "\n"
                                      << "====================================================\n" << "\n";
 
+  if (_checkMOM) {
+    bool MomIsNotGood = false;
+    edm::Handle<reco::GenParticleCollection> collGenParticles;
+    event.getByToken(_genParticleToken,collGenParticles);
+
+    if (collGenParticles.isValid()) {
+      for(std::vector<reco::GenParticle>::const_iterator it=collGenParticles->begin();
+          it!=collGenParticles->end();++it) {
+        const reco::GenParticle* gen = &(*it);
+
+        if (abs(gen->pdgId()) == _oniaPDG  && (gen->status() == 2 || (abs(gen->pdgId())==23 && gen->status() == 62))  &&
+            gen->numberOfDaughters() >= 2) {
+            if (gen->pt()<momPtMin || gen->pt()>momPtMax) {
+              MomIsNotGood = true;
+              std::cout << gen->pt() << " momPtMin: " << momPtMin << " momPtMax: " << momPtMax << std::endl;
+              break;
+            }
+        }
+      }
+    }
+
+    // If gen mom particle is not what we want to look, discard this event.
+    if (MomIsNotGood) std::cout << "finish this event" << std::endl;
+    if (MomIsNotGood) return ;
+  }
+
   edm::ESHandle<ParametersDefinerForTP> Lhc_parametersDefinerTP;
   std::unique_ptr<ParametersDefinerForTP> Cosmic_parametersDefinerTP;
 
@@ -473,21 +508,26 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         }
         
         // merged over all eta
-        h_simulcent[w]->Fill(centBin,weighting);
-        if (TP_is_matched) h_assoccent[w]->Fill(centBin,weighting);
-        for (int idx1=0; idx1<nintRapArr; idx1++) {
-          if (getEta(momentumTP.eta())>rapArr[idx1] && getEta(momentumTP.eta())<rapArr[idx1+1]) {
-            for (int idx2=0; idx2<nintPtArr; idx2++) {
-              if (getPt(sqrt(momentumTP.perp2()))>ptArr[idx2] && getPt(sqrt(momentumTP.perp2()))<ptArr[idx2+1]) {
-                int idx = nintPtArr*idx1 + idx2+1;
-                // h_simulcent[0] is for merged case: differential ones should start from idx=1
-                h_simulcent[idx]->Fill(centBin,weighting);
-                if (TP_is_matched) h_assoccent[idx]->Fill(centBin,weighting);
+//Santona: Checking if muons are in acceptance
+	if ( isGlobalMuonInAccept2015(getEta(momentumTP.eta()), getPt(sqrt(momentumTP.perp2()))) ) {
+          h_simulcent[w]->Fill(centBin,weighting);
+          if (TP_is_matched) h_assoccent[w]->Fill(centBin,weighting);
+          for (int idx1=0; idx1<nintRapArr; idx1++) {
+            if (getEta(momentumTP.eta())>rapArr[idx1] && getEta(momentumTP.eta())<rapArr[idx1+1]) {
+              for (int idx2=0; idx2<nintPtArr; idx2++) {
+                if (getPt(sqrt(momentumTP.perp2()))>ptArr[idx2] && getPt(sqrt(momentumTP.perp2()))<ptArr[idx2+1]) {
+                  int idx = nintPtArr*idx1 + idx2+1;
+                  // h_simulcent[0] is for merged case: differential ones should start from idx=1
+                  h_simulcent[idx]->Fill(centBin,weighting);
+                  if (TP_is_matched) h_assoccent[idx]->Fill(centBin,weighting);
+                }
               }
             }
           }
-        }
+	}	
 
+// Santona
+        if ( isGlobalMuonInAccept2015(getEta(momentumTP.eta()), getPt(sqrt(momentumTP.perp2()))) ) {
         for (unsigned int f=0; f<etaintervals[w].size()-1; f++){
           if (getEta(momentumTP.eta())>etaintervals[w][f]&&
               getEta(momentumTP.eta())<etaintervals[w][f+1]) {
@@ -506,6 +546,7 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
               }
             }
           }
+	}
         } // END for (unsigned int f=0; f<etaintervals[w].size()-1; f++)
         
         for (unsigned int f=0; f<phiintervals[w].size()-1; f++){
@@ -529,20 +570,24 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         } // END for (unsigned int f=0; f<phiintervals[w].size()-1; f++)
         
         // merged over all eta
-        for (unsigned int f=0; f<pTintervals[w].size()-1; f++){
-          if (getPt(sqrt(momentumTP.perp2()))>pTintervals[w][f]&&
-              getPt(sqrt(momentumTP.perp2()))<pTintervals[w][f+1]) {
-            totSIMpT[w][f] = totSIMpT[w][f] + weighting;
-            if (TP_is_matched) {
-              totASSpT[w][f] = totASSpT[w][f] + weighting;
-              
-              if (MABH) {
-                if (Quality075) {
-                  totASSpT_Quality075[w][f] = totASSpT_Quality075[w][f] + weighting;
-                  totASSpT_Quality05[w][f] = totASSpT_Quality05[w][f] + weighting;
-                }
-                else if (Quality05) { 
-                  totASSpT_Quality05[w][f] = totASSpT_Quality05[w][f] + weighting;
+// Santona
+        
+        if ( isGlobalMuonInAccept2015(getEta(momentumTP.eta()), getPt(sqrt(momentumTP.perp2()))) ) {
+          for (unsigned int f=0; f<pTintervals[w].size()-1; f++){
+            if (getPt(sqrt(momentumTP.perp2()))>pTintervals[w][f]&&
+                getPt(sqrt(momentumTP.perp2()))<pTintervals[w][f+1]) {
+              totSIMpT[w][f] = totSIMpT[w][f] + weighting;
+              if (TP_is_matched) {
+                totASSpT[w][f] = totASSpT[w][f] + weighting;
+                
+                if (MABH) {
+                  if (Quality075) {
+                    totASSpT_Quality075[w][f] = totASSpT_Quality075[w][f] + weighting;
+                    totASSpT_Quality05[w][f] = totASSpT_Quality05[w][f] + weighting;
+                  }
+                  else if (Quality05) { 
+                    totASSpT_Quality05[w][f] = totASSpT_Quality05[w][f] + weighting;
+                  }
                 }
               }
             }
@@ -550,6 +595,8 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
         } // END for (unsigned int f=0; f<pTintervals[w].size()-1; f++)
 
 
+// Santona
+        if ( isGlobalMuonInAccept2015(getEta(momentumTP.eta()), getPt(sqrt(momentumTP.perp2()))) ) {
         for (int idx1=0; idx1<nintRapArr; idx1++) {
           if (getEta(momentumTP.eta())>rapArr[idx1] && getEta(momentumTP.eta())<rapArr[idx1+1]) {
             for (int idx2=0; idx2<nintPtArr; idx2++) {
@@ -562,6 +609,7 @@ void MuonTrackValidator::analyze(const edm::Event& event, const edm::EventSetup&
             }
           }
         }
+	}
 
         for (unsigned int f=0; f<dxyintervals[w].size()-1; f++){
           if (dxySim>dxyintervals[w][f]&&

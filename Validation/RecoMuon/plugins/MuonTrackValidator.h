@@ -17,6 +17,9 @@
 
 #include "DataFormats/HeavyIonEvent/interface/Centrality.h"
 
+#include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+
 class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBase {
  public:
   /// Constructor
@@ -48,6 +51,13 @@ class MuonTrackValidator : public DQMEDAnalyzer, protected MuonTrackValidatorBas
     nintPhi = pset.getParameter<int>("nintPhi");
     useGsf = pset.getParameter<bool>("useGsf");
     BiDirectional_RecoToSim_association = pset.getParameter<bool>("BiDirectional_RecoToSim_association");
+    
+    //// When genParticle collection needs to be checked
+     _genParticleToken = consumes<reco::GenParticleCollection>(pset.getParameter<edm::InputTag>("genParticles"));
+     _oniaPDG = pset.getParameter<int>("oniaPDG");
+     momPtMin = pset.getParameter<double>("momPtMin");
+     momPtMax = pset.getParameter<double>("momPtMax");
+     _checkMOM = pset.getParameter<bool>("checkMOM");
 
     //// Weighting numbers for different pT bin MC samples in PbPb
     isPbPb = pset.getParameter<bool>("isPbPb");
@@ -196,6 +206,7 @@ private:
 			double& qoverp, double& qoverpError, double& lambda, double& lambdaError,
 			double& phi, double& phiError) const;
   Double_t findNcoll(int hiBin);
+  Bool_t isGlobalMuonInAccept2015 (float Eta, float Pt) ;
 
  private:
   std::string dirName_;
@@ -203,11 +214,16 @@ private:
   edm::EDGetTokenT<reco::SimToRecoCollection> simToRecoCollection_Token;
   edm::EDGetTokenT<reco::RecoToSimCollection> recoToSimCollection_Token;
   edm::EDGetTokenT<SimHitTPAssociationProducer::SimHitTPAssociationList> _simHitTpMapTag;
+  edm::EDGetTokenT<reco::GenParticleCollection> _genParticleToken;
 
   bool UseAssociators;
   double minPhi, maxPhi;
   int nintPhi;
   bool useGsf;
+  int _oniaPDG;
+  double momPtMin, momPtMax;
+  bool _checkMOM;
+
   // select tracking particles
   //(i.e. "denominator" of the efficiency ratio)
   TrackingParticleSelector tpSelector;	
